@@ -261,7 +261,12 @@ async function runAction(action: Action, c: { orgId: string; websiteId: string; 
     case "check_rankings": return enqueue("rank-check");
     case "sync_backlinks": return enqueue("backlink-sync");
     case "verify_backlinks": return enqueue("backlink-verify");
-    case "run_geo": return enqueue("geo-run");
+    case "run_geo": {
+      const sets = await prisma.geoPromptSet.findMany({ where: { websiteId: c.websiteId, enabled: true } });
+      if (!sets.length) return "no GEO prompt sets for this website";
+      for (const s of sets) await enqueueJob({ organizationId: c.orgId, websiteId: c.websiteId, type: "geo-run", payload: { promptSetId: s.id } });
+      return `${sets.length} prompt set run(s) queued`;
+    }
     case "generate_report": return enqueue("report-generate", { days: Number(P.days ?? 30), source: `workflow:${c.workflow.name}` });
     case "suggest_metadata": {
       const r = await generateMetadataSuggestions(c.orgId, c.websiteId, { limit: Number(P.limit ?? 10) });

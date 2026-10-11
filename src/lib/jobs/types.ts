@@ -9,6 +9,7 @@ export const JOB_TYPES = {
   "backlink-verify": { queue: "default", label: "Backlink verification", attempts: 2 },
   "geo-run": { queue: "default", label: "GEO / AI visibility check", attempts: 2 },
   "aeo-assess": { queue: "default", label: "AEO assessment", attempts: 1 },
+  "aeo-opportunities": { queue: "default", label: "AEO question opportunities", attempts: 1 },
   "internal-links": { queue: "default", label: "Internal link analysis", attempts: 1 },
   "workflow-run": { queue: "default", label: "Automation workflow", attempts: 1 },
   "report-generate": { queue: "default", label: "Report generation", attempts: 2 },

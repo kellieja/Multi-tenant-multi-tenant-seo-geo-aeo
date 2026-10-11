@@ -51,6 +51,16 @@ Legend: ✅ working & tested · 🟡 implemented, needs external credentials to 
 - 🟡 Rank tracking + volume/intent/ideas via DataForSEO (no search-engine scraping); drop alerts + ranking.dropped event
 - ✅ Search Console insights: top queries, striking distance, declines, cannibalization, one-click tracking
 - 🟡 Competitors: CRUD, provider suggestions, cached keyword-gap analysis
+
 ## Phase 5 — AEO & GEO
+- ✅ AEO readiness assessment per page (question headings, concise answers, lists/tables, author/date, schema validity, readability), key-page selection by GSC clicks else internal links, worker job
+- ✅ Question opportunities from GSC question queries and informational keywords, with a suggested answer format and status workflow
+- 🟡 People Also Ask questions via DataForSEO (needs credentials)
+- ✅ JSON-LD validator for supported rich-result types (required + recommended properties)
+- 🟡 AI answer drafts (fact guardrails, stored as reviewable suggestions): needs an AI provider key
+- 🟡 GEO prompt sets (market, language, platforms, competitor terms, cron schedule) run via official APIs (Claude web search, OpenAI web search, Gemini grounding, Perplexity Sonar) with neutral prompts; every answer is stored with model, date, response, citations and methodology. Needs provider keys; tested with mocked providers
+- ✅ GEO analysis: mention/citation rate, share of voice, sentiment (labelled heuristic), cited domains, own pages cited, unanswered prompts, weekly trend; all labelled "sampled"
+- ✅ Entity & authority audit from crawl data (Organization markup, name consistency, sameAs, logo/contact)
+- ✅ Signup/login show non-field errors (e.g. rate limiting) inline
 ## Phase 6 — Content, internal linking, competitors, reports, client portal
 ## Phase 7 — Production readiness

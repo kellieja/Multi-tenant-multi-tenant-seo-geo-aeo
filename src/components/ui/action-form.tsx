@@ -14,7 +14,7 @@ type ServerAction<T> = (prev: ActionResult<T> | null, formData: FormData) => Pro
  * field-level errors. Children may be a render function receiving state.
  */
 export function ActionForm<T = undefined>({
-  action, children, className, onSuccess, successMessage, refresh = true, resetOnSuccess,
+  action, children, className, onSuccess, successMessage, refresh = true, resetOnSuccess, inlineError,
 }: {
   action: ServerAction<T>;
   children: React.ReactNode | ((s: { pending: boolean; state: ActionResult<T> | null }) => React.ReactNode);
@@ -23,13 +23,15 @@ export function ActionForm<T = undefined>({
   successMessage?: string;
   refresh?: boolean;
   resetOnSuccess?: boolean;
+  /** Show non-field errors inline instead of as a toast (auth forms, where a toast is easy to miss). */
+  inlineError?: boolean;
 }) {
   const toast = useToast();
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   // Latest props in a ref so the wrapped action always sees current callbacks.
-  const opts = useRef({ action, onSuccess, successMessage, refresh, resetOnSuccess });
-  opts.current = { action, onSuccess, successMessage, refresh, resetOnSuccess };
+  const opts = useRef({ action, onSuccess, successMessage, refresh, resetOnSuccess, inlineError });
+  opts.current = { action, onSuccess, successMessage, refresh, resetOnSuccess, inlineError };
 
   // Side effects run inside the action (not in an effect) so they still happen if the
   // action's revalidation unmounts this form, e.g. a "Create task" button that disappears.
@@ -42,7 +44,7 @@ export function ActionForm<T = undefined>({
       if (o.resetOnSuccess) formRef.current?.reset();
       o.onSuccess?.(res.data);
       if (o.refresh) router.refresh();
-    } else if (!res.fieldErrors || Object.keys(res.fieldErrors).length === 0) {
+    } else if (!o.inlineError && (!res.fieldErrors || Object.keys(res.fieldErrors).length === 0)) {
       toast(res.error, "bad");
     }
     return res;
@@ -53,7 +55,7 @@ export function ActionForm<T = undefined>({
   return (
     <form ref={formRef} action={formAction} className={className}>
       {typeof children === "function" ? children({ pending, state }) : children}
-      {state && !state.ok && state.fieldErrors && Object.keys(state.fieldErrors).length > 0 && (
+      {state && !state.ok && (inlineError || (state.fieldErrors && Object.keys(state.fieldErrors).length > 0)) && (
         <p role="alert" className="mt-3 text-xs text-bad">{state.error}</p>
       )}
     </form>

@@ -7,7 +7,7 @@ import { registerAction } from "../actions";
 
 export function RegisterForm({ next }: { next?: string }) {
   return (
-    <ActionForm action={registerAction} refresh={false} className="mt-6 space-y-4">
+    <ActionForm action={registerAction} refresh={false} inlineError className="mt-6 space-y-4">
       {({ pending, state }) => (
         <>
           <input type="hidden" name="next" value={next ?? ""} />

@@ -7,7 +7,7 @@ import { loginAction } from "../actions";
 
 export function LoginForm({ next }: { next?: string }) {
   return (
-    <ActionForm action={loginAction} refresh={false} className="mt-6 space-y-4">
+    <ActionForm action={loginAction} refresh={false} inlineError className="mt-6 space-y-4">
       {({ pending, state }) => (
         <>
           <input type="hidden" name="next" value={next ?? ""} />

@@ -8,6 +8,8 @@ import { processSiteChangeApply } from "@/server/site-changes";
 import { processRankCheck, processKeywordMetrics } from "@/server/keywords";
 import { processBacklinkSync, processBacklinkVerify } from "@/server/backlinks";
 import { processCompetitorGap } from "@/server/competitors";
+import { processAeoAssess, processAeoOpportunities } from "@/server/aeo";
+import { processGeoRun } from "@/server/geo";
 import { processOutreachSend, discoverLinkGap, discoverUnlinkedMentions } from "@/server/outreach";
 
 type Handler = (jc: JobContext) => Promise<unknown>;
@@ -28,5 +30,8 @@ export const HANDLERS: Partial<Record<JobType, Handler>> = {
   "outreach-send": processOutreachSend,
   "link-gap": discoverLinkGap,
   "competitor-gap": processCompetitorGap,
+  "aeo-assess": processAeoAssess,
+  "aeo-opportunities": processAeoOpportunities,
+  "geo-run": processGeoRun,
   "unlinked-mentions": discoverUnlinkedMentions,
 };
