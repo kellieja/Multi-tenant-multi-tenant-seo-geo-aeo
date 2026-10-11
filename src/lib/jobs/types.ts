@@ -11,6 +11,7 @@ export const JOB_TYPES = {
   "aeo-assess": { queue: "default", label: "AEO assessment", attempts: 1 },
   "aeo-opportunities": { queue: "default", label: "AEO question opportunities", attempts: 1 },
   "internal-links": { queue: "default", label: "Internal link analysis", attempts: 1 },
+  "metadata-suggest": { queue: "default", label: "AI title & meta suggestions", attempts: 1 },
   "workflow-run": { queue: "default", label: "Automation workflow", attempts: 1 },
   "report-generate": { queue: "default", label: "Report generation", attempts: 2 },
   "outreach-send": { queue: "default", label: "Outreach email send", attempts: 3 },

@@ -10,6 +10,8 @@ import { processBacklinkSync, processBacklinkVerify } from "@/server/backlinks";
 import { processCompetitorGap } from "@/server/competitors";
 import { processAeoAssess, processAeoOpportunities } from "@/server/aeo";
 import { processGeoRun } from "@/server/geo";
+import { processMetadataSuggest } from "@/server/content";
+import { processInternalLinks } from "@/server/internal-links";
 import { processOutreachSend, discoverLinkGap, discoverUnlinkedMentions } from "@/server/outreach";
 
 type Handler = (jc: JobContext) => Promise<unknown>;
@@ -34,4 +36,6 @@ export const HANDLERS: Partial<Record<JobType, Handler>> = {
   "aeo-opportunities": processAeoOpportunities,
   "geo-run": processGeoRun,
   "unlinked-mentions": discoverUnlinkedMentions,
+  "metadata-suggest": processMetadataSuggest,
+  "internal-links": processInternalLinks,
 };

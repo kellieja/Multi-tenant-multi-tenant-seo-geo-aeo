@@ -69,3 +69,10 @@ Respond with JSON only: {"title": "...", "metaDescription": "...", "rationale": 
   }
   return { created: created.length, considered: pages.length };
 }
+
+/** Worker: drafts title/meta suggestions for a website (optionally for specific URLs). */
+export async function processMetadataSuggest(jc: import("@/lib/jobs/context").JobContext) {
+  const p = jc.job.payload as { urls?: string[]; limit?: number };
+  await jc.progress(5, "Drafting titles and meta descriptions");
+  return generateMetadataSuggestions(jc.job.organizationId, jc.job.websiteId!, { urls: p.urls, limit: p.limit ?? 10, userId: jc.job.createdById });
+}

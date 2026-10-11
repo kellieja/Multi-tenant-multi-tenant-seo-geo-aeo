@@ -75,8 +75,14 @@ export async function processSiteChangeApply(jc: JobContext) {
   try {
     // Refresh the backup immediately before writing, in case the page was edited since proposal.
     const current = await wp.readField(type, id, change.field);
+    // Full-content changes were computed from the content at proposal time; writing them over
+    // later edits would silently discard someone's work, so require a fresh proposal instead.
+    if (change.field === "content" && (current ?? "") !== (change.before ?? "")) {
+      throw new UserError("The page content changed after this change was proposed. Reject it and propose it again so the edit is based on the current content.");
+    }
     await wp.writeField(type, id, change.field, change.after);
     await prisma.siteChange.update({ where: { id: change.id }, data: { status: "APPLIED", appliedAt: new Date(), before: current, error: null } });
+    await syncLinkedSuggestion(change.source, "APPLIED");
     await notify({ organizationId: change.organizationId, websiteId: change.websiteId, type: "site_change_applied", severity: "success", title: `Applied ${change.field.replace("_", " ")} change`, body: change.targetUrl ?? undefined, link: "/automation?tab=changes" });
     return { applied: true };
   } catch (err) {
@@ -95,5 +101,12 @@ export async function rollbackSiteChange(ctx: OrgContext, changeId: string) {
   const { type, id } = parseRef(change.targetRef);
   await wp.writeField(type, id, change.field, change.before);
   await ctx.db.siteChange.update({ where: { id: change.id }, data: { status: "ROLLED_BACK", rolledBackAt: new Date() } });
+  await syncLinkedSuggestion(change.source, "ROLLED_BACK");
   await writeAuditLog({ organizationId: ctx.org.id, userId: ctx.userId, action: "site_change.rollback", entityType: "SiteChange", entityId: change.id });
+}
+
+/** Keeps an internal-link suggestion's status in step with the site change made from it. */
+async function syncLinkedSuggestion(source: string, status: "APPLIED" | "ROLLED_BACK") {
+  const m = source.match(/^internal-link:(.+)$/);
+  if (m) await prisma.internalLinkSuggestion.updateMany({ where: { id: m[1], changeId: { not: null } }, data: { status } });
 }
