@@ -1,10 +1,10 @@
-import { CronExpressionParser } from "cron-parser";
 import { prisma } from "@/lib/db/client";
 import { redis } from "@/lib/redis";
 import { readSettings } from "@/server/websites";
 import { queueCrawl } from "@/server/crawls";
 
-export const nextCronRun = (expr: string, after: Date) => CronExpressionParser.parse(expr, { currentDate: after, tz: "UTC" }).next().toDate();
+export { nextCronRun } from "@/lib/cron";
+import { nextCronRun } from "@/lib/cron";
 
 type TickTask = { name: string; run: (now: Date) => Promise<number> };
 

@@ -10,6 +10,7 @@ import { fmtDate } from "@/lib/format";
 import { prisma } from "@/lib/db/client";
 import { setFindingStatusAction, createTaskAction } from "../../actions";
 import type { PriorityFactor } from "@/audit/priority";
+import { ProposeChange } from "../propose";
 
 export const metadata = { title: "Finding" };
 
@@ -85,6 +86,12 @@ export default async function FindingDetail({ params }: { params: Promise<{ id: 
               <div className="mt-3 text-2xs text-fg-subtle">First seen {fmtDate(f.firstSeenAt)} · last seen {fmtDate(f.lastSeenAt)}{f.crawlId && <> · <Link className="text-accent hover:underline" href={`/audits/${f.crawlId}`}>latest crawl</Link></>}</div>
             </CardBody>
           </Card>
+          {f.automatable && ctx.can("findings:write") && ["missing_title", "duplicate_title", "title_length", "missing_meta_description", "duplicate_meta_description", "meta_description_length"].includes(f.issueType) && (
+            <Card>
+              <CardHeader title="Propose a fix" description={f.website.cmsType === "WORDPRESS" ? "Sent to the approval queue, then applied through the WordPress connector." : "Live changes need a WordPress site with a connected WordPress integration."} />
+              <CardBody>{f.website.cmsType === "WORDPRESS" ? <ProposeChange websiteId={f.websiteId} url={f.url} findingId={f.id} defaultField={f.issueType.includes("title") ? "title" : "meta_description"} /> : <p className="text-xs text-fg-muted">Set the website CMS to WordPress and connect it in Integrations. Or use Content Studio to draft copy for manual publishing.</p>}</CardBody>
+            </Card>
+          )}
           {f.tasks.length > 0 && (
             <Card>
               <CardHeader title="Tasks" />

@@ -3,6 +3,8 @@ import type { JobType } from "@/lib/jobs/types";
 import { processCrawlJob } from "@/server/crawls";
 import { processGscSync, processGa4Sync, processPsiCheck } from "@/server/sync";
 import { processMaintenance } from "@/server/maintenance";
+import { processWorkflowRun } from "@/server/workflows";
+import { processSiteChangeApply } from "@/server/site-changes";
 
 type Handler = (jc: JobContext) => Promise<unknown>;
 
@@ -13,4 +15,6 @@ export const HANDLERS: Partial<Record<JobType, Handler>> = {
   "ga4-sync": processGa4Sync,
   "psi-check": processPsiCheck,
   maintenance: processMaintenance,
+  "workflow-run": processWorkflowRun,
+  "site-change-apply": processSiteChangeApply,
 };

@@ -35,6 +35,8 @@ export interface EnqueueInput {
   /** If a QUEUED/RUNNING job of this type already exists for the website, return it instead. */
   dedupe?: boolean;
   delayMs?: number;
+  /** Overrides the job type's default attempt count (e.g. workflow maxRetries + 1). */
+  attempts?: number;
 }
 
 /**
@@ -70,7 +72,7 @@ export async function enqueueJob(input: EnqueueInput): Promise<{ job: JobRow; de
       { jobId: job.id },
       {
         jobId: job.id,
-        attempts: def.attempts,
+        attempts: input.attempts ?? def.attempts,
         backoff: { type: "exponential", delay: 30_000 },
         delay: input.delayMs,
       },

@@ -60,6 +60,8 @@ export async function processGscSync(jc: JobContext) {
       }),
     ]);
     await jc.progress(100, `Synced ${totals.rows.length} days and ${detail.rows.length} query/page rows`);
+    const { emitEvent } = await import("./workflows");
+    await emitEvent(site.organizationId, "gsc.synced", site.id);
     return { items: totals.rows.length + detail.rows.length, cost: totals.calls + detail.calls, message: `${totals.rows.length} daily rows, ${detail.rows.length} query/page rows (${property})` };
   });
 }

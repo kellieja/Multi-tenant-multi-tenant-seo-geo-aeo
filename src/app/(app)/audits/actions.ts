@@ -49,3 +49,15 @@ export async function createTaskAction(_: unknown, fd: FormData): Promise<Action
     return toActionError(e);
   }
 }
+
+export async function proposeChangeAction(_: unknown, fd: FormData): Promise<ActionResult> {
+  try {
+    const ctx = await getOrgContextOrThrow();
+    const { proposeSiteChange } = await import("@/server/site-changes");
+    await proposeSiteChange(ctx, { websiteId: String(fd.get("websiteId")), url: String(fd.get("url")), field: String(fd.get("field")) as "title", value: String(fd.get("value") ?? ""), source: "finding", findingId: String(fd.get("findingId") ?? "") || undefined });
+    revalidatePath("/automation");
+    return { ok: true, data: undefined, message: "Change proposed. It's in the approval queue with a backup of the current value." };
+  } catch (e) {
+    return toActionError(e);
+  }
+}

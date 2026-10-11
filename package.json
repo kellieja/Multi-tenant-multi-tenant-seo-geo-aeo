@@ -19,6 +19,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "@node-rs/argon2": "^2.2.2",
     "@prisma/client": "6.19.3",
     "@react-pdf/renderer": "^4.9.0",

@@ -5,3 +5,8 @@ import { scheduleMaintenance } from "@/server/maintenance";
 
 registerTickTask({ name: "daily-google-syncs", run: scheduleDailySyncs });
 registerTickTask({ name: "maintenance", run: scheduleMaintenance });
+import { scheduleWorkflows } from "@/server/workflows";
+import { expireApprovals } from "@/server/approvals";
+
+registerTickTask({ name: "workflows", run: scheduleWorkflows });
+registerTickTask({ name: "expire-approvals", run: expireApprovals });

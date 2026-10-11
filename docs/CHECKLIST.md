@@ -29,7 +29,15 @@ Legend: ✅ working & tested · 🟡 implemented, needs external credentials to 
 - ✅ Integrations center: status, setup steps, scopes, live credential verification, encrypted storage, sync logs, test/disconnect
 
 ## Phase 3 — Automation
-- ⬜ Worker, scheduler, workflows, approvals, notifications
+- ✅ Workflow engine: schedule (cron, UTC) / event / manual triggers, per-website conditions on live metrics, 12 action types, website/client scope, retries, notify-on, pause/resume, run-now
+- ✅ Modes: dry-run (logs only), approval (external actions wait), automatic (internal actions run; live-site changes still need approval unless the site opts into "safe-auto" for human-approved metadata)
+- ✅ Event triggers wired: crawl.completed, finding.critical, health.dropped, gsc.synced (backlink/ranking events wired in Phase 4)
+- ✅ Visual workflow builder (trigger → conditions → actions blocks, reorder, templates)
+- ✅ Approval system enforced server-side at every apply path (bypass attempts tested), expiry, separation of duties for bulk outreach
+- ✅ Site changes through WordPress REST with pre-write backup, write verification and rollback (tested against a fake WP server)
+- ✅ Execution logs, background job monitor with cancel, tasks (assign, status, client visibility), site-change history
+- ✅ Notifications: in-app + Slack webhook + SMTP email for warnings/critical/approvals
+- 🟡 AI metadata drafting (Anthropic SDK with server-side refusal fallback; OpenAI/Gemini/Perplexity via REST): needs a provider API key
 
 ## Phase 4 — Backlinks
 ## Phase 5 — AEO & GEO

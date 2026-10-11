@@ -92,7 +92,7 @@ export const PROVIDERS: ProviderDef[] = [
     id: "ANTHROPIC", name: "Anthropic Claude", category: "AI models", level: "organization", auth: "api-key",
     description: "Drafts titles, meta descriptions, briefs and AEO improvements. Also usable for GEO prompt sampling.",
     powers: ["Content Studio", "AEO drafts", "GEO checks (model answers)"],
-    fields: [{ name: "apiKey", label: "API key", type: "password", secret: true }, { name: "model", label: "Model", type: "text", optional: true, placeholder: "claude-sonnet-5-5" }],
+    fields: [{ name: "apiKey", label: "API key", type: "password", secret: true }, { name: "model", label: "Model", type: "text", optional: true, placeholder: "claude-opus-5-5" }],
     setup: ["Create an API key in the Anthropic Console.", "Paste it here. It is encrypted at rest and only used server-side."], docsUrl: "https://docs.anthropic.com/",
   },
   {

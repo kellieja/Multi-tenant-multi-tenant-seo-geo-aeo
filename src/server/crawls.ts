@@ -151,6 +151,10 @@ export async function processCrawlJob(jc: JobContext) {
       await notify({ organizationId: site.organizationId, websiteId: site.id, type: "critical_issue", severity: "critical", title: `${site.domain}: ${newCritical} new critical issue${newCritical > 1 ? "s" : ""}`, link: `/audits?websiteId=${site.id}&severity=CRITICAL` });
     }
     await pruneOldCrawlDetails(site.id);
+    const { emitEvent } = await import("./workflows");
+    await emitEvent(site.organizationId, "crawl.completed", site.id, { crawlId: crawl.id, healthScore: score });
+    if (newCritical) await emitEvent(site.organizationId, "finding.critical", site.id, { count: newCritical });
+    if (prevScore?.healthScore != null && prevScore.healthScore - score >= settings.alertHealthDrop) await emitEvent(site.organizationId, "health.dropped", site.id, { from: prevScore.healthScore, to: score });
     await jc.progress(100, `Crawl complete: ${result.pages.length} URLs, health ${Math.round(score)}`);
     return { healthScore: score, pages: result.pages.length, findings: raw.length, ...lifecycle };
   } catch (err) {
