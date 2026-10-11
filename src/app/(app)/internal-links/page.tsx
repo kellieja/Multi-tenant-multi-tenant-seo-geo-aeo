@@ -74,7 +74,7 @@ export default async function InternalLinksPage({ searchParams }: { searchParams
         {!rows.length ? <Card><EmptyState title={view === "SUGGESTED" ? "No suggestions to review" : "Nothing here"} description={view === "SUGGESTED" ? "Run “Find link opportunities”. Suggestions come from paragraphs on your pages that mention another page's tracked keyword, Search Console queries, H1 or title, and that don't already link to it." : undefined} /></Card> : (
           <Card>
             <Table>
-              <THead><TH>Source page → target page</TH><TH>Context</TH><TH align="right">Score</TH>{canWrite && <TH align="right"><span className="sr-only">Actions</span></TH>}</THead>
+              <THead><tr><TH>Source page → target page</TH><TH>Context</TH><TH align="right">Score</TH>{canWrite && <TH align="right"><span className="sr-only">Actions</span></TH>}</tr></THead>
               <tbody>
                 {rows.map((s) => {
                   const i = s.sourceParagraph.toLowerCase().indexOf(s.anchor.toLowerCase());
@@ -127,7 +127,7 @@ export default async function InternalLinksPage({ searchParams }: { searchParams
         <Card className="lg:col-span-2">
           <CardHeader title="Pages that need more internal links" description="Fewest internal links first; orphan pages are reachable only via sitemap or external links." />
           <Table>
-            <THead><TH>Page</TH><TH align="right">Internal links in</TH><TH align="right">Click depth</TH><TH>In sitemap</TH></THead>
+            <THead><tr><TH>Page</TH><TH align="right">Internal links in</TH><TH align="right">Click depth</TH><TH>In sitemap</TH></tr></THead>
             <tbody>{[...s.orphans, ...s.weak.filter((w) => !s.orphans.some((o) => o.url === w.url))].slice(0, 25).map((p) => (
               <TR key={p.url}><TD className="max-w-md"><a href={p.url} target="_blank" rel="noreferrer noopener" className="block truncate hover:underline">{p.title ?? path(p.url)}</a><div className="truncate text-2xs text-fg-subtle">{path(p.url)}</div></TD><TD align="right" className="tabular">{p.inlinks === 0 ? <Badge tone="warn">orphan</Badge> : p.inlinks}</TD><TD align="right" className="tabular">{p.depth}</TD><TD>{p.inSitemap ? "yes" : "no"}</TD></TR>
             ))}</tbody>

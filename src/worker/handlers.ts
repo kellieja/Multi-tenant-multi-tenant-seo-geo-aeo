@@ -12,6 +12,7 @@ import { processAeoAssess, processAeoOpportunities } from "@/server/aeo";
 import { processGeoRun } from "@/server/geo";
 import { processMetadataSuggest } from "@/server/content";
 import { processInternalLinks } from "@/server/internal-links";
+import { processReportJob } from "@/server/reports";
 import { processOutreachSend, discoverLinkGap, discoverUnlinkedMentions } from "@/server/outreach";
 
 type Handler = (jc: JobContext) => Promise<unknown>;
@@ -38,4 +39,5 @@ export const HANDLERS: Partial<Record<JobType, Handler>> = {
   "unlinked-mentions": discoverUnlinkedMentions,
   "metadata-suggest": processMetadataSuggest,
   "internal-links": processInternalLinks,
+  "report-generate": processReportJob,
 };

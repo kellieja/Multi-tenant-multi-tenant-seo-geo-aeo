@@ -2,6 +2,9 @@ import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import type { OrgContext } from "@/lib/auth/context";
 
+/** The parts of a member context the dashboard needs; the worker builds one for scheduled reports. */
+export type DashboardScope = Pick<OrgContext, "db" | "websiteScope">;
+
 export const dashboardFilterSchema = z.object({
   range: z.enum(["7d", "28d", "90d", "180d", "365d", "custom"]).default("28d"),
   from: z.string().optional(),
@@ -33,7 +36,7 @@ export function resolvePeriod(f: DashboardFilter) {
 }
 
 /** Website ids visible to the member after applying website/client filters. */
-export async function scopedWebsiteIds(ctx: OrgContext, f: Pick<DashboardFilter, "websiteId" | "clientId">) {
+export async function scopedWebsiteIds(ctx: DashboardScope, f: Pick<DashboardFilter, "websiteId" | "clientId">) {
   const where: Prisma.WebsiteWhereInput = {
     status: { not: "ARCHIVED" },
     ...(ctx.websiteScope ? { id: { in: ctx.websiteScope } } : {}),
@@ -57,7 +60,7 @@ function gscTotals(rows: { clicks: number; impressions: number; position: number
 
 const isoDay = (d: Date) => d.toISOString().slice(0, 10);
 
-export async function getDashboard(ctx: OrgContext, raw: unknown) {
+export async function getDashboard(ctx: DashboardScope, raw: unknown) {
   const f = dashboardFilterSchema.parse(raw ?? {});
   const p = resolvePeriod(f);
   const sites = await scopedWebsiteIds(ctx, f);

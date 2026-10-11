@@ -16,3 +16,6 @@ registerTickTask({ name: "outreach-followups", run: followUpReminders });
 import { scheduleGeoRuns } from "@/server/geo";
 
 registerTickTask({ name: "geo-runs", run: scheduleGeoRuns });
+import { scheduleReports } from "@/server/reports";
+
+registerTickTask({ name: "report-schedules", run: scheduleReports });

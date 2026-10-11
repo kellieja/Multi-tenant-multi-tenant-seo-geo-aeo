@@ -83,7 +83,7 @@ describe("Google OAuth + Search Console / GA4 sync", () => {
     const conn = await ctx.db.integrationConnection.create({ data: { organizationId: ctx.org.id, websiteId: site.id, provider: "GOOGLE_SEARCH_CONSOLE", status: "PENDING" } });
     const days = Array.from({ length: 5 }, (_, i) => new Date(Date.now() - (i + 2) * 86400_000).toISOString().slice(0, 10));
     mockFetch((url, init) => {
-      if (url.includes("oauth2.googleapis.com/token")) return { json: { access_token: "at", refresh_token: "rt", expires_in: 3600, scope: "openid https://www.googleapis.com/auth/webmasters.readonly", id_token: `x.${Buffer.from(JSON.stringify({ email: "seo@example.com" })).toString("base64url")}.y` } };
+      if (url.includes("oauth2.googleapis.com/token")) return { json: { access_token: "at", refresh_token: "refresh-token-plaintext-1d9f", expires_in: 3600, scope: "openid https://www.googleapis.com/auth/webmasters.readonly", id_token: `x.${Buffer.from(JSON.stringify({ email: "seo@example.com" })).toString("base64url")}.y` } };
       if (url.endsWith("/webmasters/v3/sites")) return { json: { siteEntry: [{ siteUrl: "sc-domain:gsc-test.example.com", permissionLevel: "siteOwner" }] } };
       if (url.includes("searchAnalytics/query")) {
         const body = JSON.parse(String(init?.body));
@@ -97,7 +97,7 @@ describe("Google OAuth + Search Console / GA4 sync", () => {
     const pending = await prisma.integrationConnection.findUniqueOrThrow({ where: { id: conn.id } });
     expect(pending.status).toBe("PENDING");
     expect(pending.externalAccountId).toBe("seo@example.com");
-    expect(pending.encryptedSecret).not.toContain("rt");
+    expect(pending.encryptedSecret).not.toContain("refresh-token-plaintext-1d9f");
 
     await expect(selectGoogleProperty(ctx, conn.id, "sc-domain:not-mine.com")).rejects.toThrow(/isn't available/);
     const job = await selectGoogleProperty(ctx, conn.id, "sc-domain:gsc-test.example.com");

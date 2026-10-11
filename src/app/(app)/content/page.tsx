@@ -247,7 +247,7 @@ function ComparisonView({ c }: { c: ContentComparison }) {
       <Card><CardHeader title="Summary" actions={<SourceTag kind="internal" source="fetched pages" />} /><CardBody><ul className="list-disc space-y-1 pl-4 text-[13px]">{c.summary.map((s) => <li key={s}>{s}</li>)}</ul></CardBody></Card>
       <Card>
         <Table>
-          <THead><TH>Metric</TH><TH><a href={c.own.url!} className="hover:underline" target="_blank" rel="noreferrer noopener">Your page</a></TH><TH><a href={c.competitor.url!} className="hover:underline" target="_blank" rel="noreferrer noopener">{new URL(c.competitor.url!).hostname}</a></TH></THead>
+          <THead><tr><TH>Metric</TH><TH><a href={c.own.url!} className="hover:underline" target="_blank" rel="noreferrer noopener">Your page</a></TH><TH><a href={c.competitor.url!} className="hover:underline" target="_blank" rel="noreferrer noopener">{new URL(c.competitor.url!).hostname}</a></TH></tr></THead>
           <tbody>{rows.map(([k, a, b]) => <TR key={k}><TD className="text-fg-muted">{k}</TD><TD>{a}</TD><TD>{b}</TD></TR>)}</tbody>
         </Table>
       </Card>

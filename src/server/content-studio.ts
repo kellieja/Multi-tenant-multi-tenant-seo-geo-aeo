@@ -96,7 +96,8 @@ const lenCheck = (v: string | null, min: number, max: number) => !!v && v.length
 export function analyzeParsed(p: ParsedPage, opts: { url: string | null; keyword?: string | null; siteHost?: string | null }): Omit<ContentAnalysis, "duplicates"> {
   const kw = opts.keyword?.trim().toLowerCase() || null;
   const text = p.text;
-  const readability = fleschReadingEase(text);
+  // Paragraphs keep their sentence boundaries; the flattened page text can run blocks together.
+  const readability = fleschReadingEase(p.paragraphs.length ? p.paragraphs.join("\n") : text);
   const internal = opts.url ? p.links.filter((l) => opts.siteHost && isSameSite(l.href, opts.siteHost)).length : 0;
   const keywordChecks: ContentAnalysis["keywordChecks"] = [];
   if (kw) {

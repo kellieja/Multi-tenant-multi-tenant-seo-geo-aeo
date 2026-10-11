@@ -47,7 +47,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       <PageHeader
         title="Executive Dashboard"
         description={<>{fmtDate(d.period.from)} – {fmtDate(d.period.to)} · compared with the previous {d.period.days} days · {d.sites.length} website{d.sites.length === 1 ? "" : "s"}</>}
-        actions={<ButtonLink href={`/api/export/dashboard?${qs}`} prefetch={false}><Download className="size-3.5" />Export CSV</ButtonLink>}
+        actions={<div className="flex gap-2"><ButtonLink href={`/api/export/dashboard?${qs}`} prefetch={false}><Download className="size-3.5" />CSV</ButtonLink><ButtonLink href={`/api/export/dashboard-pdf?${qs}`} prefetch={false}><Download className="size-3.5" />PDF</ButtonLink></div>}
       />
 
       <form method="get" className="mb-5 flex flex-wrap items-center gap-2 rounded-[var(--radius-card)] border border-border bg-surface px-3 py-2.5">
