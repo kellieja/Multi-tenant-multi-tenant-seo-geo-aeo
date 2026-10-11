@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. Colours use light-dark() so they follow `color-scheme`,
+ * which itself follows <meta name="color-scheme"> (system by default,
+ * pinned to light/dark from Settings → Appearance).
+ */
+:root {
+  color-scheme: light dark;
+  &:has(> head > meta[name="color-scheme"][content="dark"]) { color-scheme: dark; }
+  &:has(> head > meta[name="color-scheme"][content="light"]) { color-scheme: light; }
+
+  --bg: light-dark(#f6f6f4, #0c0d0f);
+  --bg-sunken: light-dark(#efefec, #08090a);
+  --surface: light-dark(#ffffff, #131417);
+  --surface-2: light-dark(#fafaf8, #191a1e);
+  --surface-hover: light-dark(#f2f2ef, #1e2024);
+  --border: light-dark(#e4e4df, #25272c);
+  --border-strong: light-dark(#cfcfc8, #34363c);
+  --fg: light-dark(#141518, #ececea);
+  --fg-muted: light-dark(#5d5f66, #9a9ca3);
+  --fg-subtle: light-dark(#8a8c92, #6c6e75);
+  --accent: light-dark(#2f5bea, #6d8cff);
+  --accent-fg: #ffffff;
+  --accent-soft: light-dark(#eaefff, #1a2240);
+  --ring: light-dark(#2f5bea66, #6d8cff66);
+
+  --good: light-dark(#13804c, #3fc483);
+  --good-soft: light-dark(#e6f5ec, #10291c);
+  --warn: light-dark(#a75d00, #f0a742);
+  --warn-soft: light-dark(#fdf1df, #2e2310);
+  --bad: light-dark(#c62e2e, #ff6b6b);
+  --bad-soft: light-dark(#fdeaea, #331616);
+  --info: light-dark(#29609e, #6aa8ef);
+  --info-soft: light-dark(#e8f0fa, #132235);
+
+  /* Categorical chart palette (validated for both schemes). */
+  /* Categorical chart palette: fixed order, validated (lightness band, chroma, CVD) per scheme. */
+  --chart-1: light-dark(#2f5bea, #5b7cf5);
+  --chart-2: light-dark(#0e9384, #1fa898);
+  --chart-3: light-dark(#c4610c, #d07a2c);
+  --chart-4: light-dark(#8a3ffc, #9d74f2);
+  --chart-5: light-dark(#c23a6b, #dc6590);
+  --chart-6: light-dark(#6b7f1a, #7e9233);
+  --chart-muted: light-dark(#c9cad0, #3a3c43);
+  --chart-grid: light-dark(#ececE7, #212328);
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --color-bg: var(--bg);
+  --color-bg-sunken: var(--bg-sunken);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --radius-card: 10px;
+  --text-2xs: 0.6875rem;
+}
+
+html, body { background: var(--bg); color: var(--fg); }
+body {
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.tabular { font-variant-numeric: tabular-nums; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+::selection { background: var(--accent-soft); }
+
+/* Dialogs: entry animation via @starting-style; exits are instant where unsupported. */
+dialog.app-dialog {
+  opacity: 0;
+  translate: 0 8px;
+  transition-property: opacity, translate, display, overlay;
+  transition-duration: 160ms;
+  transition-timing-function: cubic-bezier(.2, .8, .2, 1);
+  transition-behavior: allow-discrete;
+}
+dialog.app-dialog[open] {
+  opacity: 1;
+  translate: 0 0;
+  @starting-style { opacity: 0; translate: 0 8px; }
+}
+dialog.app-dialog::backdrop {
+  background-color: rgb(0 0 0 / 0);
+  transition-property: background-color, display, overlay;
+  transition-duration: 160ms;
+  transition-behavior: allow-discrete;
+}
+dialog.app-dialog[open]::backdrop {
+  background-color: rgb(8 9 12 / 0.45);
+  backdrop-filter: blur(2px);
+  @starting-style { background-color: rgb(0 0 0 / 0); }
+}
+
+[popover].app-popover {
+  opacity: 0;
+  transition-property: opacity, display, overlay;
+  transition-duration: 120ms;
+  transition-behavior: allow-discrete;
+}
+[popover].app-popover:popover-open {
+  opacity: 1;
+  @starting-style { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.app-dialog, [popover].app-popover { translate: none; transition-duration: 1ms; }
+  .animate-pulse { animation: none; }
+}
+
+/* Recharts: inherit tokens instead of default greys. */
+.recharts-cartesian-grid line { stroke: var(--chart-grid); }
+.recharts-text { fill: var(--fg-subtle); font-size: 11px; }
+.recharts-tooltip-cursor { fill: var(--surface-hover); }
+.recharts-surface:focus { outline: none; }
+
+/* Thin scrollbars inside data panes. */
+.scroll-thin { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
