@@ -630,6 +630,9 @@ model Competitor {
   domain         String
   name           String?
   brandTerms     String[] @default([])
+  // Cached keyword-gap analysis (provider data, with cost and timestamp).
+  analysis       Json?
+  analyzedAt     DateTime?
   createdAt      DateTime @default(now())
 
   @@unique([websiteId, domain])

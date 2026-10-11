@@ -5,6 +5,10 @@ import { processGscSync, processGa4Sync, processPsiCheck } from "@/server/sync";
 import { processMaintenance } from "@/server/maintenance";
 import { processWorkflowRun } from "@/server/workflows";
 import { processSiteChangeApply } from "@/server/site-changes";
+import { processRankCheck, processKeywordMetrics } from "@/server/keywords";
+import { processBacklinkSync, processBacklinkVerify } from "@/server/backlinks";
+import { processCompetitorGap } from "@/server/competitors";
+import { processOutreachSend, discoverLinkGap, discoverUnlinkedMentions } from "@/server/outreach";
 
 type Handler = (jc: JobContext) => Promise<unknown>;
 
@@ -17,4 +21,12 @@ export const HANDLERS: Partial<Record<JobType, Handler>> = {
   maintenance: processMaintenance,
   "workflow-run": processWorkflowRun,
   "site-change-apply": processSiteChangeApply,
+  "rank-check": processRankCheck,
+  "keyword-metrics": processKeywordMetrics,
+  "backlink-sync": processBacklinkSync,
+  "backlink-verify": processBacklinkVerify,
+  "outreach-send": processOutreachSend,
+  "link-gap": discoverLinkGap,
+  "competitor-gap": processCompetitorGap,
+  "unlinked-mentions": discoverUnlinkedMentions,
 };

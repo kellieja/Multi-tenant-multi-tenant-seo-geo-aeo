@@ -10,3 +10,6 @@ import { expireApprovals } from "@/server/approvals";
 
 registerTickTask({ name: "workflows", run: scheduleWorkflows });
 registerTickTask({ name: "expire-approvals", run: expireApprovals });
+import { followUpReminders } from "@/server/outreach";
+
+registerTickTask({ name: "outreach-followups", run: followUpReminders });

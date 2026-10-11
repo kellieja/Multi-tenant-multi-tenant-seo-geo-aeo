@@ -25,13 +25,26 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
 export function Field({
   label, htmlFor, hint, error, children, className,
 }: { label: string; htmlFor?: string; hint?: React.ReactNode; error?: string; children: React.ReactNode; className?: string }) {
+  const help = error ? <p className="text-xs text-bad">{error}</p> : hint ? <p className="text-xs text-fg-subtle">{hint}</p> : null;
+  // Without an explicit htmlFor, wrap the control in the label so it is always programmatically associated.
+  if (!htmlFor) {
+    return (
+      <div className={cn("space-y-1.5", className)}>
+        <label className="block space-y-1.5">
+          <span className="block text-xs font-medium text-fg">{label}</span>
+          {children}
+        </label>
+        {help}
+      </div>
+    );
+  }
   return (
     <div className={cn("space-y-1.5", className)}>
       <label htmlFor={htmlFor} className="block text-xs font-medium text-fg">
         {label}
       </label>
       {children}
-      {error ? <p className="text-xs text-bad">{error}</p> : hint ? <p className="text-xs text-fg-subtle">{hint}</p> : null}
+      {help}
     </div>
   );
 }

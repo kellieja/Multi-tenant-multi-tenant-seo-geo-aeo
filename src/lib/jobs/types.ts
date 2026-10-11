@@ -13,6 +13,9 @@ export const JOB_TYPES = {
   "workflow-run": { queue: "default", label: "Automation workflow", attempts: 1 },
   "report-generate": { queue: "default", label: "Report generation", attempts: 2 },
   "outreach-send": { queue: "default", label: "Outreach email send", attempts: 3 },
+  "competitor-gap": { queue: "default", label: "Competitor keyword gap", attempts: 2 },
+  "link-gap": { queue: "default", label: "Competitor link-gap discovery", attempts: 2 },
+  "unlinked-mentions": { queue: "default", label: "Unlinked brand mention discovery", attempts: 2 },
   "site-change-apply": { queue: "default", label: "Apply approved site change", attempts: 1 },
   maintenance: { queue: "default", label: "Retention & maintenance", attempts: 1 },
 } as const;

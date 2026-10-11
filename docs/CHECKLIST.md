@@ -39,7 +39,18 @@ Legend: ✅ working & tested · 🟡 implemented, needs external credentials to 
 - ✅ Notifications: in-app + Slack webhook + SMTP email for warnings/critical/approvals
 - 🟡 AI metadata drafting (Anthropic SDK with server-side refusal fallback; OpenAI/Gemini/Perplexity via REST): needs a provider API key
 
-## Phase 4 — Backlinks
+## Phase 4 — Backlinks, keywords & competitors
+- ✅ Backlink inventory: CSV import (common export column names), manual add, status lifecycle, referring-domain rollups, anchor/rel distribution, weekly link velocity, CSV export
+- ✅ Live link verification job: robots-aware, per-host politeness, anchor/rel capture, lost/broken/redirected detection, notifications + backlink.lost/new events
+- 🟡 DataForSEO backlink + referring-domain sync with cost logging (tested with mocked API responses)
+- ✅ Opportunity pipeline (Discovered → … → Verified/Lost) with prospect research: relevance scoring + explanation, broken outbound links, public contact discovery, dedupe
+- 🟡 Discovery: competitor link gap, unlinked brand mentions (DataForSEO)
+- ✅ Outreach CRM: templates with variables, campaigns, drafts, approval by a second person, daily send cap, SMTP sending, follow-up reminders, reply logging, acquired-link verification → tracked backlink
+- ✅ Disavow preparation with mandatory human review before export
+- ✅ Keywords: bulk/CSV add, groups/tags/target URL mapping, rule-based intent (labelled), history, mismatch flags, CSV export
+- 🟡 Rank tracking + volume/intent/ideas via DataForSEO (no search-engine scraping); drop alerts + ranking.dropped event
+- ✅ Search Console insights: top queries, striking distance, declines, cannibalization, one-click tracking
+- 🟡 Competitors: CRUD, provider suggestions, cached keyword-gap analysis
 ## Phase 5 — AEO & GEO
 ## Phase 6 — Content, internal linking, competitors, reports, client portal
 ## Phase 7 — Production readiness
