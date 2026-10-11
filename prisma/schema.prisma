@@ -368,6 +368,10 @@ model CrawledPage {
   mixedContent    String[] @default([])
   hasViewport     Boolean  @default(false)
   error           String?
+  // Parser details needed to re-audit carried-forward pages (title/canonical counts, rel next/prev, scripts, final status).
+  extra           Json     @default("{}")
+  // True when copied from the previous crawl during an incremental crawl.
+  carriedForward  Boolean  @default(false)
   fetchedAt       DateTime @default(now())
 
   crawl Crawl @relation(fields: [crawlId], references: [id], onDelete: Cascade)

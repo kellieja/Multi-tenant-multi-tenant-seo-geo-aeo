@@ -25,6 +25,7 @@ export interface SafeFetchResult {
   status: number;
   headers: Headers;
   body: string;
+  raw: Buffer;
   bytes: number;
   truncated: boolean;
   redirects: RedirectHop[];
@@ -101,12 +102,12 @@ export async function safeFetch(rawUrl: string, opts: SafeFetchOptions = {}): Pr
         await res.body?.cancel().catch(() => undefined);
         redirects.push({ url: current.toString(), status: res.status, location });
         if (hop >= maxRedirects) {
-          return finish(rawUrl, current, res.status, res.headers as unknown as Headers, "", 0, false, redirects, started);
+          return finish(rawUrl, current, res.status, res.headers as unknown as Headers, EMPTY, 0, false, redirects, started);
         }
         const next = new URL(location, current);
         if (redirects.some((r) => r.url === next.toString())) {
           // Redirect loop: report the chain instead of following it forever.
-          return finish(rawUrl, next, res.status, res.headers as unknown as Headers, "", 0, false, redirects, started);
+          return finish(rawUrl, next, res.status, res.headers as unknown as Headers, EMPTY, 0, false, redirects, started);
         }
         current = assertSafeUrlShape(next, { allowPrivate });
         if (res.status === 303 || ((res.status === 301 || res.status === 302) && method === "POST")) {
@@ -116,8 +117,8 @@ export async function safeFetch(rawUrl: string, opts: SafeFetchOptions = {}): Pr
         continue;
       }
 
-      const { text, bytes, truncated } = await readCapped(res.body as ReadableStream<Uint8Array> | null, maxBytes, method === "HEAD");
-      return finish(rawUrl, current, res.status, res.headers as unknown as Headers, text, bytes, truncated, redirects, started);
+      const { raw, bytes, truncated } = await readCapped(res.body as ReadableStream<Uint8Array> | null, maxBytes, method === "HEAD");
+      return finish(rawUrl, current, res.status, res.headers as unknown as Headers, raw, bytes, truncated, redirects, started);
     } catch (err) {
       if (controller.signal.aborted) throw new Error(`Request timed out after ${timeoutMs}ms: ${current}`);
       const cause = (err as { cause?: Error }).cause;
@@ -129,15 +130,17 @@ export async function safeFetch(rawUrl: string, opts: SafeFetchOptions = {}): Pr
   }
 }
 
+const EMPTY = Buffer.alloc(0);
+
 function finish(
-  url: string, final: URL, status: number, headers: Headers, body: string, bytes: number,
+  url: string, final: URL, status: number, headers: Headers, raw: Buffer, bytes: number,
   truncated: boolean, redirects: RedirectHop[], started: number,
 ): SafeFetchResult {
-  return { url, finalUrl: final.toString(), status, headers, body, bytes, truncated, redirects, timeMs: Date.now() - started };
+  return { url, finalUrl: final.toString(), status, headers, body: raw.toString("utf8"), raw, bytes, truncated, redirects, timeMs: Date.now() - started };
 }
 
 async function readCapped(stream: ReadableStream<Uint8Array> | null, maxBytes: number, skip: boolean) {
-  if (!stream || skip) return { text: "", bytes: 0, truncated: false };
+  if (!stream || skip) return { raw: EMPTY, bytes: 0, truncated: false };
   const reader = stream.getReader();
   const chunks: Uint8Array[] = [];
   let bytes = 0;
@@ -154,5 +157,5 @@ async function readCapped(stream: ReadableStream<Uint8Array> | null, maxBytes: n
     }
     chunks.push(value);
   }
-  return { text: Buffer.concat(chunks).toString("utf8"), bytes, truncated };
+  return { raw: Buffer.concat(chunks), bytes, truncated };
 }

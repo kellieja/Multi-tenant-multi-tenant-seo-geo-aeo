@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { ActionResult } from "@/lib/errors";
 import { useToast } from "./toast";
@@ -24,25 +24,31 @@ export function ActionForm<T = undefined>({
   refresh?: boolean;
   resetOnSuccess?: boolean;
 }) {
-  const [state, formAction, pending] = useActionState(action, null);
   const toast = useToast();
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
-  const last = useRef<ActionResult<T> | null>(null);
+  // Latest props in a ref so the wrapped action always sees current callbacks.
+  const opts = useRef({ action, onSuccess, successMessage, refresh, resetOnSuccess });
+  opts.current = { action, onSuccess, successMessage, refresh, resetOnSuccess };
 
-  useEffect(() => {
-    if (!state || state === last.current) return;
-    last.current = state;
-    if (state.ok) {
-      const msg = state.message ?? successMessage;
+  // Side effects run inside the action (not in an effect) so they still happen if the
+  // action's revalidation unmounts this form, e.g. a "Create task" button that disappears.
+  const wrapped = useCallback(async (prev: ActionResult<T> | null, fd: FormData) => {
+    const o = opts.current;
+    const res = await o.action(prev, fd);
+    if (res.ok) {
+      const msg = res.message ?? o.successMessage;
       if (msg) toast(msg, "good");
-      if (resetOnSuccess) formRef.current?.reset();
-      onSuccess?.(state.data);
-      if (refresh) router.refresh();
-    } else if (!state.fieldErrors || Object.keys(state.fieldErrors).length === 0) {
-      toast(state.error, "bad");
+      if (o.resetOnSuccess) formRef.current?.reset();
+      o.onSuccess?.(res.data);
+      if (o.refresh) router.refresh();
+    } else if (!res.fieldErrors || Object.keys(res.fieldErrors).length === 0) {
+      toast(res.error, "bad");
     }
-  }, [state, toast, router, onSuccess, successMessage, refresh, resetOnSuccess]);
+    return res;
+  }, [toast, router]);
+
+  const [state, formAction, pending] = useActionState(wrapped, null);
 
   return (
     <form ref={formRef} action={formAction} className={className}>
