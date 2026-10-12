@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  # Throwaway values for CI only; real secrets are never needed because every
+  # external service is exercised against local fakes.
+  ENCRYPTION_KEY: Y2ktb25seS1lbmNyeXB0aW9uLWtleS0zMi1ieXRlcyE=
+  SESSION_SECRET: ci-only-session-secret-0123456789abcdef
+
+jobs:
+  checks:
+    name: Typecheck, lint, tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: searchops
+          POSTGRES_PASSWORD: searchops
+          POSTGRES_DB: searchops_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U searchops -d searchops_test" --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://searchops:searchops@localhost:5432/searchops_test
+      DATABASE_URL: postgresql://searchops:searchops@localhost:5432/searchops_test
+      REDIS_URL: redis://localhost:6379
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Headless Chromium for the JavaScript-rendering tests.
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build
+
+  e2e:
+    name: Browser tests (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: searchops
+          POSTGRES_PASSWORD: searchops
+          POSTGRES_DB: searchops
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U searchops -d searchops" --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://searchops:searchops@localhost:5432/searchops
+      REDIS_URL: redis://localhost:6379
+      APP_URL: http://localhost:3000
+      # The specs crawl the local fixture site on 127.0.0.1, which the SSRF guard blocks
+      # unless this development-only flag is set. The app refuses it in production builds.
+      ALLOW_PRIVATE_NETWORK_FETCH: "true"
+      E2E_WITH_WORKER: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm db:deploy
+      - name: Start fixture site, web app and worker
+        run: scripts/ci/start-e2e-stack.sh
+      - run: pnpm test:e2e
+      - name: Upload screenshots and logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: |
+            e2e/.results
+            ${{ runner.temp }}/searchops-e2e-logs
+          retention-days: 7
+
+  docker:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: searchops:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
