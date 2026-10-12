@@ -81,3 +81,24 @@ export async function taskAssignAction(_: unknown, fd: FormData): Promise<Action
     return ok("Task updated");
   } catch (e) { return toActionError(e); }
 }
+
+export async function createChangePackAction(_: unknown, fd: FormData): Promise<ActionResult<{ id: string }>> {
+  try {
+    const { createChangePack } = await import("@/server/change-packs");
+    const pack = await createChangePack(await getOrgContextOrThrow(), String(fd.get("websiteId")), { includeIssues: fd.get("includeIssues") === "on" });
+    revalidatePath("/automation");
+    return { ok: true, data: { id: pack.id }, message: "Change pack created" };
+  } catch (e) { return toActionError(e); }
+}
+
+export async function archiveChangePackAction(_: unknown, fd: FormData): Promise<ActionResult> {
+  try {
+    const ctx = await getOrgContextOrThrow();
+    ctx.assert("content:write");
+    const pack = await ctx.db.changePack.findUnique({ where: { id: String(fd.get("id")) } });
+    if (!pack) throw new UserError("Change pack not found");
+    if (ctx.websiteScope && !ctx.websiteScope.includes(pack.websiteId)) throw new UserError("Change pack not found");
+    await ctx.db.changePack.update({ where: { id: pack.id }, data: { status: "ARCHIVED" } });
+    return ok("Archived. Its items can go into a new pack.");
+  } catch (e) { return toActionError(e); }
+}

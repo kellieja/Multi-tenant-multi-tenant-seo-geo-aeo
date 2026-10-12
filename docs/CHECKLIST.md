@@ -97,4 +97,5 @@ Legend: ✅ working & tested · 🟡 implemented, needs external credentials to 
 ## Phase 8 — Replit and non-WordPress sites
 - ✅ GitHub Actions CI: typecheck, lint, unit/integration tests (Postgres + Redis services), production build, Playwright browser tests against a live stack, Docker image build
 - ✅ JavaScript rendering for client-rendered sites (React/Vite, typical Replit projects): auto-detect from the homepage, rendered crawl with raw-vs-rendered comparison, "Main content only appears after JavaScript runs" finding, AEO and internal-link jobs use rendered pages; every browser request goes through the SSRF guard, WebSockets and service workers blocked; falls back to raw HTML when Chromium is unavailable
+- ✅ Change packs for sites without a CMS connector: approved titles, meta descriptions, answer sections, internal links (and optionally top open issues) as a Markdown checklist, JSON and a ready-to-paste Replit Agent prompt (adds pre-rendering guidance on JavaScript sites); every crawl verifies which items are live, marks sources applied and closes finished packs
 

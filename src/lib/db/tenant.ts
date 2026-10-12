@@ -9,7 +9,7 @@ export const TENANT_MODELS = new Set<string>([
   "AnalyticsDaily", "PageSpeedResult", "Keyword", "RankObservation", "Competitor",
   "Backlink", "ReferringDomain", "OutreachProspect", "OutreachCampaign", "OutreachTemplate",
   "OutreachMessage", "DisavowEntry", "ContentSuggestion", "AeoAssessment", "AeoOpportunity",
-  "GeoPromptSet", "GeoPrompt", "GeoObservation", "InternalLinkSuggestion", "SiteChange",
+  "GeoPromptSet", "GeoPrompt", "GeoObservation", "InternalLinkSuggestion", "SiteChange", "ChangePack",
   "Workflow", "WorkflowExecution", "Approval", "Notification", "Report", "ReportSchedule",
   "AuditLog",
 ]);

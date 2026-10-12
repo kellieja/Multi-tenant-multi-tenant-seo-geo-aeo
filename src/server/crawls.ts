@@ -1,3 +1,4 @@
+import { verifyChangePacks } from "./change-packs";
 import type { Crawl, CrawledPage, Prisma, FindingStatus } from "@prisma/client";
 import { prisma } from "@/lib/db/client";
 import type { OrgContext } from "@/lib/auth/context";
@@ -116,6 +117,8 @@ export async function processCrawlJob(jc: JobContext) {
 
     await jc.progress(96, "Updating findings");
     const lifecycle = await reconcileFindings(crawl, result, raw);
+    // Check which manually applied change-pack items are now live.
+    const packs = await verifyChangePacks(crawl.websiteId, crawl.id).catch((err) => { console.error("[change-packs]", err); return null; });
 
     const counts: Record<string, number> = {};
     for (const f of raw) counts[f.issueType] = (counts[f.issueType] ?? 0) + 1;
@@ -136,6 +139,7 @@ export async function processCrawlJob(jc: JobContext) {
       imagesChecked: result.imageChecks.size,
       issueCounts: counts,
       rendering: JSON.parse(JSON.stringify(result.rendering)) as Prisma.InputJsonValue,
+      changePackItemsVerified: packs?.newlyDone ?? 0,
       bySeverity: raw.reduce<Record<string, number>>((m, f) => { const s = ISSUES[f.issueType].severity; m[s] = (m[s] ?? 0) + 1; return m; }, {}),
       ...lifecycle,
       healthFormula: HEALTH_FORMULA,

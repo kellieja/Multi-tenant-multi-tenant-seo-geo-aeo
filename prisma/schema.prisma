@@ -960,6 +960,26 @@ model InternalLinkSuggestion {
 }
 
 // Proposed or applied change to a live website through a CMS connector.
+/// A bundle of exact edits for sites without a connected CMS (e.g. Replit apps). The user applies
+/// them (by hand or via Replit Agent); each crawl afterwards verifies which items are live.
+model ChangePack {
+  id             String    @id @default(cuid())
+  organizationId String
+  websiteId      String
+  title          String
+  // OPEN | VERIFIED | ARCHIVED
+  status         String    @default("OPEN")
+  // [{ id, kind, url, current, proposed, detail, sourceType, sourceId, status: pending|done }]
+  items          Json
+  createdById    String?
+  lastCheckedAt  DateTime?
+  verifiedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([organizationId, websiteId, status])
+}
+
 model SiteChange {
   id             String    @id @default(cuid())
   organizationId String

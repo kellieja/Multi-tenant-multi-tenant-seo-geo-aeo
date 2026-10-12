@@ -13,8 +13,9 @@ import { JobProgress } from "@/components/jobs/job-progress";
 import { JOB_TYPES, type JobType } from "@/lib/jobs/types";
 import { ACTIONS, EVENTS, type WorkflowInput } from "@/server/workflow-schema";
 import { fmtDate, fmtDuration, fmtRelative } from "@/lib/format";
-import { toggleWorkflowAction, runWorkflowAction, cancelJobAction, rollbackAction } from "./actions";
-import { ApprovalCard, TaskRow, type ApprovalDetail } from "./parts";
+import { toggleWorkflowAction, runWorkflowAction, cancelJobAction, rollbackAction, archiveChangePackAction } from "./actions";
+import { ApprovalCard, TaskRow, CreatePackForm, PromptBox, type ApprovalDetail } from "./parts";
+import { packItems, packPromptFor } from "@/server/change-packs";
 import { changeRegion } from "@/lib/diff";
 
 export const metadata = { title: "Automation Center" };
@@ -37,6 +38,7 @@ export default async function AutomationPage({ searchParams }: { searchParams: P
     { key: "executions", label: "Execution log" },
     { key: "jobs", label: "Background jobs", count: activeJobs },
     { key: "changes", label: "Site changes" },
+    { key: "packs", label: "Change packs" },
   ];
   const tab = tabs.find((t) => t.key === sp.tab)?.key ?? "workflows";
   const canWrite = ctx.can("automation:write");
@@ -55,6 +57,7 @@ export default async function AutomationPage({ searchParams }: { searchParams: P
       {tab === "executions" && <Executions />}
       {tab === "jobs" && <Jobs />}
       {tab === "changes" && <Changes />}
+      {tab === "packs" && <Packs />}
     </>
   );
 
@@ -218,6 +221,59 @@ export default async function AutomationPage({ searchParams }: { searchParams: P
           </>
         )}
       </Card>
+    );
+  }
+
+  async function Packs() {
+    const sites = await ctx.db.website.findMany({ where: { status: { not: "ARCHIVED" }, ...(ctx.websiteScope ? { id: { in: ctx.websiteScope } } : {}) }, select: { id: true, name: true }, orderBy: { name: "asc" } });
+    const packs = await ctx.db.changePack.findMany({ where: { status: { in: sp.status === "all" ? ["OPEN", "VERIFIED", "ARCHIVED"] : ["OPEN", "VERIFIED"] }, ...websiteWhere(ctx) }, orderBy: { createdAt: "desc" }, take: 50 });
+    const siteName = new Map(sites.map((s) => [s.id, s.name]));
+    const selected = sp.id ? packs.find((p) => p.id === sp.id) ?? null : null;
+    const prompt = selected ? await packPromptFor(selected) : null;
+    const kindLabel: Record<string, string> = { title: "Title", meta_description: "Meta description", internal_link: "Internal link", answer_section: "Answer section", issue: "Issue" };
+    return (
+      <div className="space-y-4">
+        <Notice tone="info">For sites without a connected CMS (Replit apps, static or custom-built sites): bundle approved titles, meta descriptions, answer sections and internal links into exact instructions. Apply them by hand or paste the prompt into Replit Agent, then deploy. The next crawl checks every item and marks it done.</Notice>
+        {ctx.can("content:write") && sites.length > 0 && <Card className="p-4"><CreatePackForm sites={sites} /></Card>}
+        {!packs.length ? <Card><EmptyState title="No change packs yet" description="Approve suggestions in Content Studio, AEO or Internal Linking first, then create a pack for the website." /></Card> : (
+          <Card>
+            <Table>
+              <THead><tr><TH>Pack</TH><TH>Website</TH><TH>Progress</TH><TH>Status</TH><TH><span className="sr-only">Actions</span></TH></tr></THead>
+              <tbody>{packs.map((p) => {
+                const items = packItems(p);
+                const done = items.filter((i) => i.status === "done").length;
+                return (
+                  <TR key={p.id}>
+                    <TD><Link href={`/automation?tab=packs&id=${p.id}`} className="font-medium hover:underline">{p.title}</Link><div className="text-2xs text-fg-subtle">created {fmtRelative(p.createdAt)}{p.lastCheckedAt ? ` · checked ${fmtRelative(p.lastCheckedAt)}` : " · not checked yet"}</div></TD>
+                    <TD className="text-fg-muted">{siteName.get(p.websiteId) ?? ""}</TD>
+                    <TD className="tabular">{done} / {items.length} live</TD>
+                    <TD><Badge tone={p.status === "VERIFIED" ? "good" : p.status === "ARCHIVED" ? "neutral" : "warn"}>{p.status === "OPEN" ? "waiting for next crawl" : p.status.toLowerCase()}</Badge></TD>
+                    <TD align="right"><div className="flex justify-end gap-2 text-xs">
+                      <a className="text-accent hover:underline" href={`/api/change-packs/${p.id}?format=md`}>Checklist</a>
+                      <a className="text-accent hover:underline" href={`/api/change-packs/${p.id}?format=json`}>JSON</a>
+                      {p.status === "OPEN" && ctx.can("content:write") && <ActionButton action={archiveChangePackAction} fields={{ id: p.id }} size="sm" variant="ghost">Archive</ActionButton>}
+                    </div></TD>
+                  </TR>
+                );
+              })}</tbody>
+            </Table>
+          </Card>
+        )}
+        {selected && prompt && (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card>
+              <CardHeader title={selected.title} description={`${siteName.get(selected.websiteId) ?? ""} · ${packItems(selected).length} item(s)`} />
+              <ul className="divide-y divide-border text-[13px]">{packItems(selected).map((i) => (
+                <li key={i.id} className="flex items-start gap-2.5 px-4 py-2">
+                  <Badge tone={i.status === "done" ? "good" : "neutral"}>{i.status === "done" ? "live" : "to do"}</Badge>
+                  <div className="min-w-0"><div className="font-medium">{kindLabel[i.kind]} · <span className="text-fg-muted">{(() => { try { return new URL(i.url).pathname; } catch { return i.url; } })()}</span></div><div className="truncate text-2xs text-fg-subtle">{i.kind === "internal_link" ? `“${i.detail?.anchor}” → ${i.proposed}` : i.kind === "answer_section" ? i.detail?.heading : i.proposed}</div></div>
+                </li>
+              ))}</ul>
+            </Card>
+            <Card><CardHeader title="Prompt for Replit Agent" description="Paste into Replit Agent (or any coding assistant) in the site's project, review its changes, then deploy." /><div className="p-4 pt-0"><PromptBox prompt={prompt} /></div></Card>
+          </div>
+        )}
+      </div>
     );
   }
 

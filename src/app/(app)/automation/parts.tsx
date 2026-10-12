@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/form";
 import { fmtDate, fmtInt } from "@/lib/format";
 import type { ChangeRegion } from "@/lib/diff";
-import { decideApprovalAction, taskStatusAction, taskAssignAction } from "./actions";
+import { decideApprovalAction, taskStatusAction, taskAssignAction, createChangePackAction } from "./actions";
 
 export type ApprovalDetail =
   | { type: "diff"; field: string; region: ChangeRegion; afterLength: number }
@@ -107,6 +107,29 @@ function ChangeDiff({ d }: { d: Extract<ApprovalDetail, { type: "diff" }> }) {
         <span className="text-fg-muted">{r.suffix}</span>
         {r.suffixTruncated && <span className="text-fg-subtle">…</span>}
       </div>
+    </div>
+  );
+}
+
+export function CreatePackForm({ sites }: { sites: { id: string; name: string }[] }) {
+  return (
+    <ActionForm action={createChangePackAction} className="flex flex-wrap items-end gap-3" onSuccess={(d) => { window.location.href = `/automation?tab=packs&id=${d.id}`; }}>
+      {({ pending }) => (
+        <>
+          <label className="text-xs font-medium">Website<Select name="websiteId" className="mt-1 w-56">{sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select></label>
+          <label className="flex items-center gap-1.5 pb-2 text-xs"><input type="checkbox" name="includeIssues" className="accent-[var(--color-accent)]" />Include open high-priority issues</label>
+          <Button type="submit" variant="primary" loading={pending}>Create change pack</Button>
+        </>
+      )}
+    </ActionForm>
+  );
+}
+
+export function PromptBox({ prompt }: { prompt: string }) {
+  return (
+    <div>
+      <textarea readOnly value={prompt} rows={12} aria-label="Replit Agent prompt" className="w-full rounded-md border border-border bg-surface-2 p-2.5 font-mono text-[11px] leading-relaxed" onFocus={(e) => e.currentTarget.select()} />
+      <Button size="sm" className="mt-2" onClick={() => navigator.clipboard.writeText(prompt)}>Copy prompt</Button>
     </div>
   );
 }
