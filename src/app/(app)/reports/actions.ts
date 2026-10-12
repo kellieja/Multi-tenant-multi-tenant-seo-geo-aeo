@@ -69,6 +69,10 @@ export async function toggleScheduleAction(_: unknown, fd: FormData): Promise<Ac
     ctx.assert("reports:write");
     const id = String(fd.get("id"));
     const enabled = fd.get("enabled") === "1";
+    const sched = await ctx.db.reportSchedule.findUnique({ where: { id } });
+    if (!sched) return { ok: false, error: "Schedule not found" };
+    // Resuming a schedule that sends without review is itself an approval decision.
+    if (enabled && sched.autoApprove) ctx.assert("reports:approve");
     await ctx.db.reportSchedule.update({ where: { id }, data: { enabled } });
     await writeAuditLog({ organizationId: ctx.org.id, userId: ctx.userId, action: enabled ? "report_schedule.enable" : "report_schedule.disable", entityType: "ReportSchedule", entityId: id });
     revalidatePath("/reports");

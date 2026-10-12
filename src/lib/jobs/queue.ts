@@ -102,3 +102,30 @@ export async function cancelJob(organizationId: string, jobId: string) {
   });
   return true;
 }
+
+/**
+ * Repairs drift between Job rows (source of truth) and BullMQ (e.g. after Redis data loss or a
+ * restore): QUEUED rows with no queue entry are re-queued; RUNNING rows whose queue entry is gone
+ * are marked failed so they stop blocking de-duplication. Runs from the scheduler tick.
+ */
+export async function recoverOrphanedJobs(now = new Date()) {
+  const rows = await prisma.job.findMany({
+    where: { OR: [{ status: "QUEUED", queuedAt: { lt: new Date(now.getTime() - 10 * 60_000) } }, { status: "RUNNING", startedAt: { lt: new Date(now.getTime() - 15 * 60_000) } }] },
+    take: 500,
+  });
+  let repaired = 0;
+  for (const row of rows) {
+    const def = JOB_TYPES[row.type as JobType];
+    if (!def) continue;
+    const q = getQueue(def.queue);
+    if (await q.getJob(row.id)) continue;
+    if (row.status === "QUEUED") {
+      await q.add(row.type, { jobId: row.id }, { jobId: row.id, attempts: def.attempts, backoff: { type: "exponential", delay: 30_000 } });
+    } else {
+      await prisma.job.update({ where: { id: row.id }, data: { status: "FAILED", error: "The queue lost track of this job (worker or Redis restart). Run it again.", finishedAt: now } });
+      if (row.type === "crawl") await prisma.crawl.updateMany({ where: { jobId: row.id, status: "RUNNING" }, data: { status: "FAILED", finishedAt: now } });
+    }
+    repaired++;
+  }
+  return repaired;
+}

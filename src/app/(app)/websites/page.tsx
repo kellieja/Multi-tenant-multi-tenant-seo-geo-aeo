@@ -26,7 +26,7 @@ export default async function WebsitesPage({ searchParams }: { searchParams: Pro
   const since = new Date(Date.now() - 28 * 86400_000);
 
   const [clients, facets, lastCrawls, openFindings, gsc] = await Promise.all([
-    ctx.db.client.findMany({ where: { archivedAt: null }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    ctx.db.client.findMany({ where: { archivedAt: null, ...(ctx.role === "CLIENT" ? { id: ctx.membership.clientId ?? "__none__" } : {}) }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
     ctx.db.website.findMany({ select: { project: true, folder: true, industry: true }, where: ctx.websiteScope ? { id: { in: ctx.websiteScope } } : {} }),
     ctx.db.crawl.findMany({
       where: { websiteId: { in: ids }, status: "SUCCEEDED" },

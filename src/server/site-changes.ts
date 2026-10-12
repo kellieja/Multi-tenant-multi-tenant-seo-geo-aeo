@@ -4,6 +4,7 @@ import type { OrgContext } from "@/lib/auth/context";
 import { assertWebsiteAccess } from "@/lib/auth/context";
 import type { JobContext } from "@/lib/jobs/context";
 import { UserError } from "@/lib/errors";
+import { sha256 } from "@/lib/crypto";
 import { writeAuditLog } from "@/lib/audit-log";
 import { findConnection } from "@/integrations/connections";
 import { WordPressClient } from "@/integrations/wordpress";
@@ -45,7 +46,9 @@ export async function proposeSiteChange(ctx: OrgContext | { orgId: string; userI
   const label = data.field.replace("_", " ");
   const approval = await requestApproval({
     organizationId: orgId, websiteId: site.id, kind: "SITE_CHANGE", subjectType: "SiteChange", subjectId: change.id, requestedById: userId,
-    summary: `Change ${label} on ${data.url}`, payload: { field: data.field, before: before?.slice(0, 2000), after: data.value.slice(0, 2000), url: data.url, findingId: data.findingId },
+    summary: `Change ${label} on ${data.url}`,
+    // The preview is truncated; the approval screen loads the full change, and afterHash binds the decision to this exact value.
+    payload: { field: data.field, before: before?.slice(0, 2000), after: data.value.slice(0, 2000), afterLength: data.value.length, afterHash: sha256(data.value), url: data.url, findingId: data.findingId },
   });
   const withApproval = await prisma.siteChange.update({ where: { id: change.id }, data: { approvalId: approval.id } });
   await writeAuditLog({ organizationId: orgId, userId, action: "site_change.propose", entityType: "SiteChange", entityId: change.id, metadata: { field: data.field, url: data.url } });
@@ -69,7 +72,9 @@ export async function processSiteChangeApply(jc: JobContext) {
   const change = await prisma.siteChange.findUniqueOrThrow({ where: { id: siteChangeId } });
   if (change.organizationId !== jc.job.organizationId) throw new Error("Tenant mismatch");
   if (change.status !== "APPROVED") throw new UserError(`Change is ${change.status.toLowerCase()}; only approved changes can be applied`);
-  await assertApproved(change.organizationId, change.approvalId, "SiteChange", change.id);
+  const approval = await assertApproved(change.organizationId, change.approvalId, "SiteChange", change.id);
+  const approvedHash = (approval.payload as { afterHash?: string }).afterHash;
+  if (approvedHash && approvedHash !== sha256(change.after)) throw new UserError("This change was modified after it was approved; it needs a new approval");
   const wp = await clientFor(change);
   const { type, id } = parseRef(change.targetRef);
   try {

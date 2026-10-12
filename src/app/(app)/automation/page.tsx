@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Plus, Workflow as WorkflowIcon, Pause, Play } from "lucide-react";
-import { requireOrgContext, websiteWhere } from "@/lib/auth/context";
+import { requireStaffContext, websiteWhere } from "@/lib/auth/context";
 import { prisma } from "@/lib/db/client";
 import { PageHeader, EmptyState, Notice } from "@/components/ui/page";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -14,7 +14,8 @@ import { JOB_TYPES, type JobType } from "@/lib/jobs/types";
 import { ACTIONS, EVENTS, type WorkflowInput } from "@/server/workflow-schema";
 import { fmtDate, fmtDuration, fmtRelative } from "@/lib/format";
 import { toggleWorkflowAction, runWorkflowAction, cancelJobAction, rollbackAction } from "./actions";
-import { ApprovalCard, TaskRow } from "./parts";
+import { ApprovalCard, TaskRow, type ApprovalDetail } from "./parts";
+import { changeRegion } from "@/lib/diff";
 
 export const metadata = { title: "Automation Center" };
 
@@ -23,7 +24,7 @@ const triggerLabel = (t: WorkflowInput["trigger"]) => t.type === "schedule" ? `C
 
 export default async function AutomationPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
-  const ctx = await requireOrgContext();
+  const ctx = await requireStaffContext();
   const [pendingApprovals, activeJobs, openTasks] = await Promise.all([
     ctx.db.approval.count({ where: { status: "PENDING" } }),
     ctx.db.job.count({ where: { status: { in: ["QUEUED", "RUNNING"] } } }),
@@ -96,9 +97,19 @@ export default async function AutomationPage({ searchParams }: { searchParams: P
 
   async function Approvals() {
     const status = sp.status === "decided" ? "decided" : "PENDING";
-    const rows = await ctx.db.approval.findMany({ where: status === "PENDING" ? { status: "PENDING", ...(ctx.websiteScope ? { websiteId: { in: ctx.websiteScope } } : {}) } : { status: { not: "PENDING" } }, orderBy: { createdAt: "desc" }, take: 50 });
+    const rows = await ctx.db.approval.findMany({ where: { ...(status === "PENDING" ? { status: "PENDING" as const } : { status: { not: "PENDING" as const } }), ...(ctx.websiteScope ? { websiteId: { in: ctx.websiteScope } } : {}) }, orderBy: { createdAt: "desc" }, take: 50 });
     const users = await prisma.user.findMany({ where: { id: { in: rows.flatMap((r) => [r.requestedById, r.decidedById]).filter(Boolean) as string[] } }, select: { id: true, name: true } });
     const name = new Map(users.map((u) => [u.id, u.name]));
+    // Approvers review the full change, not the truncated preview stored in the payload.
+    const changes = await ctx.db.siteChange.findMany({ where: { id: { in: rows.filter((r) => r.subjectType === "SiteChange").map((r) => r.subjectId) } }, select: { id: true, field: true, before: true, after: true } });
+    const changeById = new Map(changes.map((c) => [c.id, c]));
+    const emails = await ctx.db.outreachMessage.findMany({ where: { approvalId: { in: rows.filter((r) => r.kind === "OUTREACH_SEND").map((r) => r.id) } }, select: { approvalId: true, subject: true, body: true, prospect: { select: { contactEmail: true, domain: true } } }, take: 2000 });
+    const detailFor = (a: (typeof rows)[number]): ApprovalDetail | undefined => {
+      const c = a.subjectType === "SiteChange" ? changeById.get(a.subjectId) : undefined;
+      if (c) return { type: "diff", field: c.field, region: changeRegion(c.before ?? "", c.after), afterLength: c.after.length };
+      if (a.kind === "OUTREACH_SEND") return { type: "emails", items: emails.filter((m) => m.approvalId === a.id).map((m) => ({ to: m.prospect.contactEmail ?? m.prospect.domain, subject: m.subject, body: m.body })) };
+      return undefined;
+    };
     return (
       <div className="space-y-3">
         <div className="flex gap-2 text-xs">
@@ -107,7 +118,7 @@ export default async function AutomationPage({ searchParams }: { searchParams: P
         </div>
         {!ctx.can("approvals:decide") && <Notice tone="info">You can view approval requests but only owners, admins and managers can decide them.</Notice>}
         {rows.length === 0 ? <Card><EmptyState title={status === "PENDING" ? "Nothing waiting for approval" : "No decisions yet"} description="Site changes, outreach sends and external workflow actions appear here before anything happens." /></Card> : rows.map((a) => (
-          <ApprovalCard key={a.id} approval={{ id: a.id, kind: a.kind, summary: a.summary, status: a.status, payload: a.payload as Record<string, unknown>, createdAt: a.createdAt.toISOString(), requestedBy: a.requestedById ? name.get(a.requestedById) ?? "user" : "automation", decidedBy: a.decidedById ? name.get(a.decidedById) ?? "user" : a.status === "APPROVED" ? "policy" : null, note: a.note, expiresAt: a.expiresAt?.toISOString() ?? null }} canDecide={ctx.can("approvals:decide")} />
+          <ApprovalCard key={a.id} approval={{ id: a.id, kind: a.kind, summary: a.summary, status: a.status, payload: a.payload as Record<string, unknown>, createdAt: a.createdAt.toISOString(), requestedBy: a.requestedById ? name.get(a.requestedById) ?? "user" : "automation", decidedBy: a.decidedById ? name.get(a.decidedById) ?? "user" : a.status === "APPROVED" ? "policy" : null, note: a.note, expiresAt: a.expiresAt?.toISOString() ?? null }} detail={detailFor(a)} canDecide={ctx.can("approvals:decide")} />
         ))}
       </div>
     );

@@ -1,3 +1,5 @@
+import { safeSmtpOptions } from "@/lib/net/smtp";
+import { UserError } from "@/lib/errors";
 import type { IntegrationProvider } from "@prisma/client";
 import { safeFetch } from "@/lib/net/safe-fetch";
 import { IntegrationError } from "./connections";
@@ -87,10 +89,11 @@ export const TESTERS: Partial<Record<IntegrationProvider, (s: Record<string, str
   async SMTP(s) {
     const nodemailer = await import("nodemailer");
     try {
-      const t = nodemailer.createTransport(s.url);
+      const t = nodemailer.createTransport(await safeSmtpOptions(s.url));
       await t.verify();
       return { ok: true, message: "SMTP server accepted the credentials.", config: { from: s.from } };
     } catch (err) {
+      if (err instanceof UserError) return { ok: false, message: err.message };
       return { ok: false, message: `SMTP verification failed: ${(err as Error).message}` };
     }
   },

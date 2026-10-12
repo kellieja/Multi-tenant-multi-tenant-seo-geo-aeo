@@ -13,10 +13,12 @@ import { isDemoMode } from "@/lib/env";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await requireOrgContext();
+  // Org-wide broadcasts (userId null) can name any website, so client-portal users only get notifications addressed to them.
+  const notifWhere = ctx.role === "CLIENT" ? { userId: ctx.userId } : { OR: [{ userId: ctx.userId }, { userId: null }] };
   const [orgs, notifications, unread, activeJobs, pendingApprovals] = await Promise.all([
     prisma.membership.findMany({ where: { userId: ctx.userId }, include: { organization: { select: { id: true, name: true } } } }),
-    ctx.db.notification.findMany({ where: { OR: [{ userId: ctx.userId }, { userId: null }] }, orderBy: { createdAt: "desc" }, take: 8 }),
-    ctx.db.notification.count({ where: { OR: [{ userId: ctx.userId }, { userId: null }], readAt: null } }),
+    ctx.db.notification.findMany({ where: notifWhere, orderBy: { createdAt: "desc" }, take: 8 }),
+    ctx.db.notification.count({ where: { ...notifWhere, readAt: null } }),
     ctx.role === "CLIENT" ? 0 : ctx.db.job.count({ where: { status: { in: ["QUEUED", "RUNNING"] } } }),
     ctx.can("approvals:decide") ? ctx.db.approval.count({ where: { status: "PENDING" } }) : 0,
   ]);

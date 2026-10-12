@@ -1,4 +1,4 @@
-import { requireOrgContext } from "@/lib/auth/context";
+import { requireStaffContext } from "@/lib/auth/context";
 import { listConnections, PROVIDERS } from "@/server/integrations";
 import { missingEnv } from "@/integrations/registry";
 import { PageHeader, Notice } from "@/components/ui/page";
@@ -14,7 +14,7 @@ export const metadata = { title: "Integrations" };
 
 export default async function IntegrationsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
-  const ctx = await requireOrgContext();
+  const ctx = await requireStaffContext();
   const [conns, sites, logs] = await Promise.all([
     listConnections(ctx),
     ctx.db.website.findMany({ where: { status: { not: "ARCHIVED" } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),

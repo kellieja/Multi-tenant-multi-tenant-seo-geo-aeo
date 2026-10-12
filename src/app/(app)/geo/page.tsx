@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
-import { requireOrgContext } from "@/lib/auth/context";
+import { requireStaffContext } from "@/lib/auth/context";
 import { geoSummary, entityAudit, PLATFORM_LABEL } from "@/server/geo";
 import { AI_PROVIDERS, type AiProviderId } from "@/integrations/ai";
 import { resolveSite, SitePicker } from "@/components/data/site-picker";
@@ -22,7 +22,7 @@ export const metadata = { title: "GEO & AI Visibility" };
 
 export default async function GeoPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
-  const ctx = await requireOrgContext();
+  const ctx = await requireStaffContext();
   const { sites, site } = await resolveSite(ctx, sp.websiteId);
   const header = <PageHeader title="GEO & AI Visibility" description="How often AI assistants mention and cite your brand for the questions your customers ask, measured with official APIs and recorded with full evidence." actions={<SitePicker sites={sites} current={site?.id} preserve={{ tab: sp.tab }} />} />;
   if (!site) return <>{header}<Card><EmptyState title="Add a website first" action={<ButtonLink href="/websites">Websites</ButtonLink>} /></Card></>;

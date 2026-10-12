@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Download } from "lucide-react";
-import { requireOrgContext } from "@/lib/auth/context";
+import { requireStaffContext } from "@/lib/auth/context";
 import { compareCrawls } from "@/server/findings";
 import { PageHeader, Notice } from "@/components/ui/page";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -29,7 +29,7 @@ interface Summary {
 export default async function CrawlDetail({ params, searchParams }: { params: Promise<{ crawlId: string }>; searchParams: Promise<Record<string, string | undefined>> }) {
   const { crawlId } = await params;
   const sp = await searchParams;
-  const ctx = await requireOrgContext();
+  const ctx = await requireStaffContext();
   const cmp = await compareCrawls(ctx, crawlId);
   if (!cmp || (ctx.websiteScope && !ctx.websiteScope.includes(cmp.crawl.websiteId))) notFound();
   const { crawl, baseline } = cmp;

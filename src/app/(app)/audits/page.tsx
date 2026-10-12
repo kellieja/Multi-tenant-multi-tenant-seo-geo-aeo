@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Download, ScanSearch } from "lucide-react";
-import { requireOrgContext, websiteWhere } from "@/lib/auth/context";
+import { requireStaffContext, websiteWhere } from "@/lib/auth/context";
 import { listFindings } from "@/server/findings";
 import { PageHeader, EmptyState } from "@/components/ui/page";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -22,7 +22,7 @@ const SEV_COLORS: Record<string, string> = { CRITICAL: "var(--bad)", HIGH: "var(
 
 export default async function AuditsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
-  const ctx = await requireOrgContext();
+  const ctx = await requireStaffContext();
   const tab = sp.tab === "crawls" ? "crawls" : "findings";
   const sites = await ctx.db.website.findMany({ where: { status: "ACTIVE", ...(ctx.websiteScope ? { id: { in: ctx.websiteScope } } : {}) }, select: { id: true, name: true, domain: true }, orderBy: { name: "asc" } });
   const canRun = ctx.can("audits:run");

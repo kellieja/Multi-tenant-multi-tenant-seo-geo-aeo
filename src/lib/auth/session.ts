@@ -6,8 +6,21 @@ export const SESSION_COOKIE = "so_session";
 
 async function requestMeta() {
   const h = await headers();
-  const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? null;
-  return { ip, userAgent: h.get("user-agent") };
+  return { ip: clientIp(h), userAgent: h.get("user-agent") };
+}
+
+/**
+ * Client IP for rate limiting and session records. The leftmost X-Forwarded-For entry is
+ * client-controlled, so we take the entry added by our own proxy: TRUSTED_PROXY_HOPS from the
+ * right (default 1). Vercel's own header is preferred when present.
+ */
+export function clientIp(h: Pick<Headers, "get">): string | null {
+  const vercel = h.get("x-vercel-forwarded-for");
+  if (vercel) return vercel.split(",")[0].trim();
+  const hops = Math.max(1, Number(process.env.TRUSTED_PROXY_HOPS ?? 1) || 1);
+  const xff = h.get("x-forwarded-for")?.split(",").map((x) => x.trim()).filter(Boolean) ?? [];
+  if (xff.length) return xff[Math.max(0, xff.length - hops)];
+  return h.get("x-real-ip");
 }
 
 export async function startSession(userId: string, organizationId: string | null) {

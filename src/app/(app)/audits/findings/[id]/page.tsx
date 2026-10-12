@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireOrgContext } from "@/lib/auth/context";
+import { requireStaffContext } from "@/lib/auth/context";
 import { PageHeader } from "@/components/ui/page";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Badge, severityTone } from "@/components/ui/badge";
@@ -16,7 +16,7 @@ export const metadata = { title: "Finding" };
 
 export default async function FindingDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const ctx = await requireOrgContext();
+  const ctx = await requireStaffContext();
   const f = await ctx.db.auditFinding.findUnique({ where: { id }, include: { website: true, events: { orderBy: { createdAt: "desc" } }, tasks: true } });
   if (!f || (ctx.websiteScope && !ctx.websiteScope.includes(f.websiteId))) notFound();
   const users = await prisma.user.findMany({ where: { id: { in: f.events.map((e) => e.userId).filter(Boolean) as string[] } }, select: { id: true, name: true } });

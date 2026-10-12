@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireOrgContext } from "@/lib/auth/context";
+import { requireStaffContext } from "@/lib/auth/context";
 import { PageHeader } from "@/components/ui/page";
 import type { WorkflowInput } from "@/server/workflow-schema";
 import { fmtRelative } from "@/lib/format";
@@ -10,7 +10,7 @@ export const metadata = { title: "Workflow" };
 
 export default async function EditWorkflow({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const ctx = await requireOrgContext();
+  const ctx = await requireStaffContext();
   ctx.assert("automation:write");
   const wf = await ctx.db.workflow.findUnique({ where: { id } });
   if (!wf) notFound();

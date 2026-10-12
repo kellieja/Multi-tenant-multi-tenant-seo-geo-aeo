@@ -79,3 +79,18 @@ Legend: ✅ working & tested · 🟡 implemented, needs external credentials to 
 - ✅ Client portal: client users see approved reports covering only their websites and the tasks shared with them; staff-only modules hidden
 - ✅ Website hub: per-site summary of every module with provenance labels
 ## Phase 7 — Production readiness
+- ✅ Security review of all actions, routes and job processors; fixes verified by tests:
+  - client users get a 404 on staff modules and see only notifications addressed to them; approval history scoped to their websites
+  - approvers see the exact diff of a site change and every email in an outreach batch; approvals are bound to a hash of the approved content
+  - "safe-auto" publishing only trusts content approved by someone who can decide site changes
+  - org-supplied SMTP servers must be public hosts on mail ports (SSRF)
+  - same-origin-only login redirects; CSV formula guard tightened; rate limits use the trusted proxy hop for client IP
+  - only owners can demote or remove owners; resuming an auto-approve report schedule needs approver rights; approve screen lists actual recipients
+  - Content-Security-Policy added (no third-party scripts, no framing, no plugins)
+- ✅ `/api/health` (database, Redis, worker heartbeat) for load balancers and uptime monitors
+- ✅ Orphaned-job recovery: QUEUED rows with no queue entry are re-queued; RUNNING rows whose queue entry vanished are failed
+- ✅ Production `next build` passes
+- 🟡 Dockerfile (non-root, healthcheck; `next start` / `worker` / `migrate`) and docker-compose: image built and smoke-tested (migrate, web, worker, health) in this environment, except the `apt-get install openssl` layer, which couldn't be fetched here because the Debian mirror is blocked by the build sandbox's network policy. Build once on a normal machine/CI to confirm.
+- ✅ README: architecture, local setup, configuration, deployment (Vercel web + container worker, or all containers), security model
+- ✅ docs/OPERATIONS.md: backups, monitoring/alerts, scaling, retention, deploys and rollback, failure recovery runbooks
+

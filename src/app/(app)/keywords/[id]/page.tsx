@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireOrgContext } from "@/lib/auth/context";
+import { requireStaffContext } from "@/lib/auth/context";
 import { PageHeader } from "@/components/ui/page";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,7 @@ export const metadata = { title: "Keyword" };
 
 export default async function KeywordDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const ctx = await requireOrgContext();
+  const ctx = await requireStaffContext();
   const k = await ctx.db.keyword.findUnique({ where: { id }, include: { observations: { orderBy: { observedAt: "asc" }, take: 365 } } });
   if (!k || (ctx.websiteScope && !ctx.websiteScope.includes(k.websiteId))) notFound();
   const gsc = await ctx.db.searchConsoleQuery.groupBy({ by: ["date"], where: { websiteId: k.websiteId, query: k.phrase }, _sum: { clicks: true, impressions: true }, _avg: { position: true }, orderBy: { date: "asc" } });

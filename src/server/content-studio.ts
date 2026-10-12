@@ -365,7 +365,9 @@ export async function updateSuggestionStatus(ctx: OrgContext, id: string, status
   if (!s) throw new UserError("Suggestion not found");
   await assertWebsiteAccess(ctx, s.websiteId);
   if (s.status === "APPLIED") throw new UserError("This suggestion was already applied");
-  await ctx.db.contentSuggestion.update({ where: { id }, data: { status } });
+  // Who approved is recorded: policy-based auto-publishing only trusts approvals by people who may decide site changes.
+  const input = { ...((s.input as Record<string, unknown>) ?? {}), approvedById: status === "APPROVED" ? ctx.userId : null, approvedByCanDecide: status === "APPROVED" ? ctx.can("approvals:decide") : false };
+  await ctx.db.contentSuggestion.update({ where: { id }, data: { status, input: input as Prisma.InputJsonValue } });
   await writeAuditLog({ organizationId: ctx.org.id, userId: ctx.userId, action: `content.${status.toLowerCase()}`, entityType: "ContentSuggestion", entityId: id, metadata: { kind: s.kind } });
 }
 
@@ -384,7 +386,7 @@ export async function editSuggestion(ctx: OrgContext, id: string, fields: { titl
   } else if (s.kind === "AEO_ANSWER") {
     output = JSON.stringify({ ...prev, answer: z.string().trim().min(1).max(20_000).parse(fields.text) });
   } else throw new UserError("This kind of suggestion can't be edited inline");
-  await ctx.db.contentSuggestion.update({ where: { id }, data: { output, status: "EDITED" } });
+  await ctx.db.contentSuggestion.update({ where: { id }, data: { output, status: "EDITED", input: { ...((s.input as Record<string, unknown>) ?? {}), approvedById: null, approvedByCanDecide: false } as Prisma.InputJsonValue } });
 }
 
 /** Sends an approved METADATA suggestion to the live-site approval flow (WordPress). */

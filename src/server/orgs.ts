@@ -89,6 +89,7 @@ export async function changeMemberRole(ctx: OrgContext, membershipId: string, ro
   ctx.assert("members:manage");
   const m = await ctx.db.membership.findUnique({ where: { id: membershipId } });
   if (!m) throw new UserError("Member not found");
+  if (m.role === "OWNER" && ctx.role !== "OWNER") throw new UserError("Only owners can change an owner's access");
   if (m.role === "OWNER" && role !== "OWNER") {
     const owners = await ctx.db.membership.count({ where: { role: "OWNER" } });
     if (owners <= 1) throw new UserError("A workspace needs at least one owner");
@@ -103,6 +104,7 @@ export async function removeMember(ctx: OrgContext, membershipId: string) {
   ctx.assert("members:manage");
   const m = await ctx.db.membership.findUnique({ where: { id: membershipId } });
   if (!m) throw new UserError("Member not found");
+  if (m.role === "OWNER" && ctx.role !== "OWNER") throw new UserError("Only owners can remove an owner");
   if (m.role === "OWNER" && (await ctx.db.membership.count({ where: { role: "OWNER" } })) <= 1) {
     throw new UserError("A workspace needs at least one owner");
   }

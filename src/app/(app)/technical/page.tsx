@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Gauge } from "lucide-react";
-import { requireOrgContext } from "@/lib/auth/context";
+import { requireStaffContext } from "@/lib/auth/context";
 import { PageHeader, EmptyState, Notice } from "@/components/ui/page";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +22,7 @@ const cwvTone = (v: number | null, good: number, poor: number) => (v == null ? "
 
 export default async function TechnicalPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
-  const ctx = await requireOrgContext();
+  const ctx = await requireStaffContext();
   const sites = await ctx.db.website.findMany({ where: { status: { not: "ARCHIVED" }, ...(ctx.websiteScope ? { id: { in: ctx.websiteScope } } : {}) }, select: { id: true, name: true }, orderBy: { name: "asc" } });
   const websiteId = sp.websiteId && sites.some((s) => s.id === sp.websiteId) ? sp.websiteId : sites[0]?.id;
 

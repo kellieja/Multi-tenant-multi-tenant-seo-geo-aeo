@@ -6,7 +6,7 @@ export function toCsv(rows: unknown[][]): string {
         .map((v) => {
           if (v == null) return "";
           let s = v instanceof Date ? v.toISOString() : String(v);
-          if (/^[=+\-@\t\r]/.test(s) && !/^-?\d/.test(s)) s = `'${s}`;
+          if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+(\.\d+)?(e[+-]?\d+)?$/i.test(s)) s = `'${s}`;
           return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
         })
         .join(","),

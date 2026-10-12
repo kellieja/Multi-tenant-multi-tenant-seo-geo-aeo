@@ -7,9 +7,14 @@ import { requestMeta, startSession, endSession } from "@/lib/auth/session";
 import { rateLimit } from "@/lib/rate-limit";
 import { toActionError, type ActionResult } from "@/lib/errors";
 
+/** Only same-origin paths. Rejects "//host", "/\\host" (browsers treat "\\" as "/") and control characters. */
 function safeNext(next: FormDataEntryValue | null) {
   const n = typeof next === "string" ? next : "";
-  return n.startsWith("/") && !n.startsWith("//") ? n : "/dashboard";
+  if (!n.startsWith("/") || /[\\\u0000-\u001f\u007f]/.test(n)) return "/dashboard";
+  try {
+    const u = new URL(n, "http://app.invalid");
+    return u.origin === "http://app.invalid" ? `${u.pathname}${u.search}${u.hash}` : "/dashboard";
+  } catch { return "/dashboard"; }
 }
 
 export async function loginAction(_: ActionResult | null, fd: FormData): Promise<ActionResult> {

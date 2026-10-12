@@ -19,3 +19,6 @@ registerTickTask({ name: "geo-runs", run: scheduleGeoRuns });
 import { scheduleReports } from "@/server/reports";
 
 registerTickTask({ name: "report-schedules", run: scheduleReports });
+import { recoverOrphanedJobs } from "@/lib/jobs/queue";
+
+registerTickTask({ name: "recover-orphaned-jobs", run: recoverOrphanedJobs });

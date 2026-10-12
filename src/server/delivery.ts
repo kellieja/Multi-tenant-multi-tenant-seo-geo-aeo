@@ -1,3 +1,4 @@
+import { safeSmtpOptions } from "@/lib/net/smtp";
 import { prisma } from "@/lib/db/client";
 import { findConnection, readSecret } from "@/integrations/connections";
 import type { NotifyInput } from "./notifications";
@@ -8,7 +9,8 @@ export async function sendEmail(organizationId: string, msg: { to: string | stri
   const cfg = conn?.encryptedSecret ? readSecret<{ url: string; from: string }>(conn) : process.env.SMTP_URL ? { url: process.env.SMTP_URL, from: process.env.EMAIL_FROM ?? "" } : null;
   if (!cfg?.url) throw new Error("Email isn't configured. Connect SMTP in Integrations or set SMTP_URL.");
   const nodemailer = await import("nodemailer");
-  const transport = nodemailer.createTransport(cfg.url);
+  // Org-supplied SMTP URLs are pinned to a checked public address; the operator's SMTP_URL is trusted as-is.
+  const transport = nodemailer.createTransport(conn?.encryptedSecret ? await safeSmtpOptions(cfg.url) : cfg.url);
   const info = await transport.sendMail({ from: cfg.from || process.env.EMAIL_FROM, ...msg });
   return info.messageId as string;
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Download, RefreshCw, TrendingUp } from "lucide-react";
-import { requireOrgContext } from "@/lib/auth/context";
+import { requireStaffContext } from "@/lib/auth/context";
 import { listKeywords, searchConsoleInsights } from "@/server/keywords";
 import { resolveSite, SitePicker } from "@/components/data/site-picker";
 import { PageHeader, EmptyState, Notice } from "@/components/ui/page";
@@ -24,7 +24,7 @@ const intentTone = { INFORMATIONAL: "info", COMMERCIAL: "accent", TRANSACTIONAL:
 
 export default async function KeywordsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
-  const ctx = await requireOrgContext();
+  const ctx = await requireStaffContext();
   const { sites, site } = await resolveSite(ctx, sp.websiteId);
   const header = <PageHeader title="Keywords & Rankings" description="Tracked keyword positions from a licensed SERP provider, plus first-party Search Console query data. Every metric shows its source." actions={<SitePicker sites={sites} current={site?.id} preserve={{ tab: sp.tab }} />} />;
   if (!site) return <>{header}<Card><EmptyState title="Add a website first" action={<ButtonLink href="/websites">Websites</ButtonLink>} /></Card></>;

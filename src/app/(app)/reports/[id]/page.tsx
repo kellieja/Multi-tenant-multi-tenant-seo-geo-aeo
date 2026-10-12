@@ -46,7 +46,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         <Card className="mb-5">
           <CardHeader title="Review" actions={<Badge tone={approved ? "good" : "warn"}>{approved ? `approved ${fmtDate(report.approvedAt)}` : "awaiting approval"}</Badge>} />
           <CardBody className="space-y-4">
-            {!approved && <Notice tone="info">Client users can&apos;t see this report until it&apos;s approved{schedule?.recipients.length ? `, and the ${schedule.recipients.length} scheduled recipient(s) will be emailed on approval` : ""}. Numbers were frozen on {fmtDate(data.generatedAt, true)}.</Notice>}
+            {!approved && <Notice tone="info">Client users can&apos;t see this report until it&apos;s approved{schedule?.recipients.length ? <>, and approving emails it to <b>{schedule.recipients.join(", ")}</b></> : ""}. Numbers were frozen on {fmtDate(data.generatedAt, true)}.</Notice>}
             {!approved && ctx.can("reports:write") && <NotesForm id={report.id} notes={report.notes} />}
             <div className="flex flex-wrap items-end justify-between gap-3">
               {approved && ctx.can("reports:approve") ? <SendForm id={report.id} defaultRecipients={schedule?.recipients.join(", ") ?? ""} /> : <span />}

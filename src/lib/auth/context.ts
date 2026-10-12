@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Membership, Organization, Role } from "@prisma/client";
 import { prisma } from "@/lib/db/client";
 import { tenantDb, type TenantDb } from "@/lib/db/tenant";
@@ -85,6 +85,16 @@ export const requireOrgContext = cache(async (): Promise<OrgContext> => {
   }
   return ctx;
 });
+
+/**
+ * For staff-only modules (audits, automation, integrations, ...). Client-portal users get a 404,
+ * so pages that list org-wide data can never leak other clients' information to them.
+ */
+export async function requireStaffContext(): Promise<OrgContext> {
+  const ctx = await requireOrgContext();
+  if (ctx.role === "CLIENT") notFound();
+  return ctx;
+}
 
 /** For route handlers / server actions: throws instead of redirecting. */
 export async function getOrgContextOrThrow(): Promise<OrgContext> {

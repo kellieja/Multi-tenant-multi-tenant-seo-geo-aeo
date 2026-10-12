@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Check, X, PenLine } from "lucide-react";
-import { requireOrgContext } from "@/lib/auth/context";
+import { requireStaffContext } from "@/lib/auth/context";
 import { resolveSite, SitePicker } from "@/components/data/site-picker";
 import { PageHeader, EmptyState, Notice } from "@/components/ui/page";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -26,7 +26,7 @@ const TABS = [
 
 export default async function ContentPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
-  const ctx = await requireOrgContext();
+  const ctx = await requireStaffContext();
   const { sites, site } = await resolveSite(ctx, sp.websiteId);
   const header = <PageHeader title="Content Studio" description="Analyze pages, compare with competitors, draft briefs and review AI suggestions. Nothing is published without approval." actions={<SitePicker sites={sites} current={site?.id} preserve={{ tab: sp.tab }} />} />;
   if (!site) return <>{header}<Card><EmptyState title="Add a website first" action={<ButtonLink href="/websites">Websites</ButtonLink>} /></Card></>;

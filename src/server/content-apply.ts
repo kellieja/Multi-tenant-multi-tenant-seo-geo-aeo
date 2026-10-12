@@ -12,6 +12,14 @@ export async function proposeApprovedSuggestions(orgId: string, websiteId: strin
   let proposed = 0;
   for (const s of suggestions) {
     if (!s.url) continue;
+    // Auto-approval of the site change is only allowed when the content itself was approved by someone
+    // who may decide site changes; an analyst's approval still goes through the normal approval queue.
+    const inp = (s.input ?? {}) as { approvedById?: string | null; approvedByCanDecide?: boolean };
+    let trusted = false;
+    if (opts.autoApprove && inp.approvedByCanDecide && inp.approvedById) {
+      const m = await prisma.membership.findFirst({ where: { organizationId: orgId, userId: inp.approvedById }, select: { role: true } });
+      trusted = !!m && ["OWNER", "ADMIN", "MANAGER"].includes(m.role);
+    }
     const out = JSON.parse(s.output) as { title?: string; metaDescription?: string };
     const fields: ["title" | "meta_description", string | undefined][] = [["title", out.title], ["meta_description", out.metaDescription]];
     for (const [field, value] of fields) {
@@ -19,7 +27,7 @@ export async function proposeApprovedSuggestions(orgId: string, websiteId: strin
       try {
         const change = await proposeSiteChange({ orgId, userId: null }, { websiteId, url: s.url, field, value, source: opts.source });
         proposed++;
-        if (opts.autoApprove && change.approvalId) {
+        if (opts.autoApprove && trusted && change.approvalId) {
           await prisma.approval.update({ where: { id: change.approvalId }, data: { status: "APPROVED", decidedAt: new Date(), note: `Auto-approved by site "safe-auto" policy. Content approved in suggestion ${s.id}.` } });
           await prisma.siteChange.update({ where: { id: change.id }, data: { status: "APPROVED" } });
           await enqueueJob({ organizationId: orgId, websiteId, type: "site-change-apply", payload: { siteChangeId: change.id } });

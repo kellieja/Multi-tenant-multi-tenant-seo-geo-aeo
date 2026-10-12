@@ -6,12 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/form";
-import { fmtDate } from "@/lib/format";
+import { fmtDate, fmtInt } from "@/lib/format";
+import type { ChangeRegion } from "@/lib/diff";
 import { decideApprovalAction, taskStatusAction, taskAssignAction } from "./actions";
+
+export type ApprovalDetail =
+  | { type: "diff"; field: string; region: ChangeRegion; afterLength: number }
+  | { type: "emails"; items: { to: string; subject: string; body: string }[] };
 
 const kindLabel: Record<string, string> = { SITE_CHANGE: "Live site change", OUTREACH_SEND: "Outreach send", CONTENT_PUBLISH: "Content publish", WORKFLOW_ACTION: "Workflow action" };
 
-export function ApprovalCard({ approval: a, canDecide }: { approval: { id: string; kind: string; summary: string; status: string; payload: Record<string, unknown>; createdAt: string; requestedBy: string; decidedBy: string | null; note: string | null; expiresAt: string | null }; canDecide: boolean }) {
+export function ApprovalCard({ approval: a, canDecide, detail }: { detail?: ApprovalDetail; approval: { id: string; kind: string; summary: string; status: string; payload: Record<string, unknown>; createdAt: string; requestedBy: string; decidedBy: string | null; note: string | null; expiresAt: string | null }; canDecide: boolean }) {
   const p = a.payload as { before?: string; after?: string; url?: string; messageIds?: string[]; action?: { type: string } };
   return (
     <Card className="p-4">
@@ -22,13 +27,25 @@ export function ApprovalCard({ approval: a, canDecide }: { approval: { id: strin
           <p className="text-2xs text-fg-subtle">Requested by {a.requestedBy} · {fmtDate(a.createdAt, true)}{a.expiresAt && a.status === "PENDING" ? ` · expires ${fmtDate(a.expiresAt)}` : ""}{a.decidedBy ? ` · decided by ${a.decidedBy}` : ""}{a.note ? ` · “${a.note}”` : ""}</p>
         </div>
       </div>
-      {(p.before !== undefined || p.after !== undefined) && (
+      {detail?.type === "diff" && <ChangeDiff d={detail} />}
+      {detail?.type === "emails" && (
+        <div className="mt-3 space-y-1.5">
+          <div className="text-2xs text-fg-subtle">All {detail.items.length} email{detail.items.length === 1 ? "" : "s"} in this request</div>
+          {detail.items.map((m, i) => (
+            <details key={i} className="rounded-md border border-border px-2.5 py-1.5 text-xs" open={detail.items.length === 1}>
+              <summary className="cursor-pointer"><span className="font-medium">{m.to}</span> · {m.subject}</summary>
+              <div className="mt-1.5 whitespace-pre-wrap break-words text-fg-muted">{m.body}</div>
+            </details>
+          ))}
+        </div>
+      )}
+      {!detail && (p.before !== undefined || p.after !== undefined) && (
         <div className="mt-3 grid gap-2 text-xs md:grid-cols-2">
           <div className="rounded-md border border-bad/20 bg-bad-soft p-2.5"><div className="mb-1 text-2xs font-semibold uppercase tracking-wider text-bad">Current</div><div className="whitespace-pre-wrap break-words text-fg">{p.before || "(empty)"}</div></div>
           <div className="rounded-md border border-good/20 bg-good-soft p-2.5"><div className="mb-1 text-2xs font-semibold uppercase tracking-wider text-good">Proposed</div><div className="whitespace-pre-wrap break-words text-fg">{p.after}</div></div>
         </div>
       )}
-      {p.messageIds && <p className="mt-2 text-xs text-fg-muted">{p.messageIds.length} email{p.messageIds.length === 1 ? "" : "s"} · <Link className="text-accent hover:underline" href="/backlinks?tab=outreach">review drafts</Link></p>}
+      {!detail && p.messageIds && <p className="mt-2 text-xs text-fg-muted">{p.messageIds.length} email{p.messageIds.length === 1 ? "" : "s"} · <Link className="text-accent hover:underline" href="/backlinks?tab=outreach">review drafts</Link></p>}
       {a.status === "PENDING" && canDecide && (
         <ActionForm action={decideApprovalAction} className="mt-3 flex flex-wrap items-center gap-2">
           {({ pending }) => (
@@ -74,5 +91,22 @@ export function TaskRow({ task: t, members, canWrite }: { task: { id: string; ti
       </td>
       <td className="px-3 pr-4 text-xs text-fg-muted">{fmtDate(t.createdAt)}</td>
     </tr>
+  );
+}
+
+function ChangeDiff({ d }: { d: Extract<ApprovalDetail, { type: "diff" }> }) {
+  const r = d.region;
+  return (
+    <div className="mt-3 text-xs">
+      <div className="mb-1 text-2xs text-fg-subtle">Exact change to <b>{d.field.replace("_", " ")}</b> ({fmtInt(d.afterLength)} characters after the change). Unchanged text is shortened; everything that changes is shown in full.</div>
+      <div className="max-h-96 overflow-auto rounded-md border border-border bg-surface-2 p-2.5 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-words">
+        {r.prefixTruncated && <span className="text-fg-subtle">…</span>}
+        <span className="text-fg-muted">{r.prefix}</span>
+        {r.removed && <del className="bg-bad-soft text-bad">{r.removed}</del>}
+        {r.added && <ins className="bg-good-soft text-good no-underline">{r.added}</ins>}
+        <span className="text-fg-muted">{r.suffix}</span>
+        {r.suffixTruncated && <span className="text-fg-subtle">…</span>}
+      </div>
+    </div>
   );
 }

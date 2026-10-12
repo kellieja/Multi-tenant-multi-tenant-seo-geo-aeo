@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { MessageSquareQuote } from "lucide-react";
-import { requireOrgContext } from "@/lib/auth/context";
+import { requireStaffContext } from "@/lib/auth/context";
 import { resolveSite, SitePicker } from "@/components/data/site-picker";
 import { PageHeader, EmptyState, Notice } from "@/components/ui/page";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -21,7 +21,7 @@ export const metadata = { title: "AEO Optimization" };
 
 export default async function AeoPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
-  const ctx = await requireOrgContext();
+  const ctx = await requireStaffContext();
   const { sites, site } = await resolveSite(ctx, sp.websiteId);
   const header = <PageHeader title="AEO Optimization" description="Make content easy for answer engines to understand, quote and cite: question coverage, concise answers, structure, authorship and valid markup." actions={<SitePicker sites={sites} current={site?.id} preserve={{ tab: sp.tab }} />} />;
   if (!site) return <>{header}<Card><EmptyState title="Add a website first" action={<ButtonLink href="/websites">Websites</ButtonLink>} /></Card></>;

@@ -17,6 +17,6 @@ export async function switchOrgAction(fd: FormData) {
 
 export async function markNotificationsReadAction() {
   const ctx = await getOrgContextOrThrow();
-  await ctx.db.notification.updateMany({ where: { OR: [{ userId: ctx.userId }, { userId: null }], readAt: null }, data: { readAt: new Date() } });
+  await ctx.db.notification.updateMany({ where: { ...(ctx.role === "CLIENT" ? { userId: ctx.userId } : { OR: [{ userId: ctx.userId }, { userId: null }] }), readAt: null }, data: { readAt: new Date() } });
   revalidatePath("/", "layout");
 }

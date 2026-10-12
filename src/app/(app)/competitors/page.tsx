@@ -1,5 +1,5 @@
 import { Swords } from "lucide-react";
-import { requireOrgContext } from "@/lib/auth/context";
+import { requireStaffContext } from "@/lib/auth/context";
 import { resolveSite, SitePicker } from "@/components/data/site-picker";
 import { PageHeader, EmptyState } from "@/components/ui/page";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -18,7 +18,7 @@ export const metadata = { title: "Competitor Intelligence" };
 
 export default async function CompetitorsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
-  const ctx = await requireOrgContext();
+  const ctx = await requireStaffContext();
   const { sites, site } = await resolveSite(ctx, sp.websiteId);
   const header = <PageHeader title="Competitor Intelligence" description="Track competitor domains, find keyword gaps and link gaps, and compare brand visibility in AI answers." actions={<SitePicker sites={sites} current={site?.id} />} />;
   if (!site) return <>{header}<Card><EmptyState title="Add a website first" action={<ButtonLink href="/websites">Websites</ButtonLink>} /></Card></>;

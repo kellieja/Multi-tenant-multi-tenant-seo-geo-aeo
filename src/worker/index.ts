@@ -33,9 +33,15 @@ async function main() {
     if (j.type === "crawl") await prisma.crawl.updateMany({ where: { jobId: j.id, status: "RUNNING" }, data: { status: "FAILED", finishedAt: new Date() } });
   }
 
+  // Liveness signal read by /api/health so monitoring notices a dead worker.
+  const beat = () => connection.set("worker:heartbeat", String(Date.now()), "EX", 180).catch(() => undefined);
+  await beat();
+  const heartbeat = setInterval(beat, 30_000);
+
   console.log(`[worker] started (crawl×${concurrency.crawl}, default×${concurrency.default})`);
   const shutdown = async (sig: string) => {
     console.log(`[worker] ${sig}: draining…`);
+    clearInterval(heartbeat);
     await Promise.all(workers.map((w) => w.close()));
     await prisma.$disconnect();
     process.exit(0);

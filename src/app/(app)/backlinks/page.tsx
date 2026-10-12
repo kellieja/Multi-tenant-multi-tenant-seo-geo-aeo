@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Download, Link2, RefreshCw, ShieldCheck, Search } from "lucide-react";
-import { requireOrgContext } from "@/lib/auth/context";
+import { requireStaffContext } from "@/lib/auth/context";
 import { backlinkStats, listBacklinks } from "@/server/backlinks";
 import { outreachReport, STAGES } from "@/server/outreach";
 import { resolveSite, SitePicker } from "@/components/data/site-picker";
@@ -26,7 +26,7 @@ const TYPE_LABEL: Record<string, string> = { INDUSTRY_PUBLICATION: "Publication"
 
 export default async function BacklinksPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
-  const ctx = await requireOrgContext();
+  const ctx = await requireStaffContext();
   const { sites, site } = await resolveSite(ctx, sp.websiteId);
   const header = (
     <PageHeader title="Backlink Intelligence" description="Backlink inventory, verification, link-gap discovery and an outreach CRM for sustainable link acquisition. No placements, rankings or authority gains are guaranteed."

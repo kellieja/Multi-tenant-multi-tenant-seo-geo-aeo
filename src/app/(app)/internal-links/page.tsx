@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Check, Network, X } from "lucide-react";
-import { requireOrgContext } from "@/lib/auth/context";
+import { requireStaffContext } from "@/lib/auth/context";
 import { resolveSite, SitePicker } from "@/components/data/site-picker";
 import { PageHeader, EmptyState, Notice } from "@/components/ui/page";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -22,7 +22,7 @@ const path = (u: string) => u.replace(/^https?:\/\/[^/]+/, "") || "/";
 
 export default async function InternalLinksPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;
-  const ctx = await requireOrgContext();
+  const ctx = await requireStaffContext();
   const { sites, site } = await resolveSite(ctx, sp.websiteId);
   const header = <PageHeader title="Internal Linking" description="Contextual link suggestions from your own content, orphan pages and link depth. Links are added only after review and approval." actions={<SitePicker sites={sites} current={site?.id} preserve={{ tab: sp.tab }} />} />;
   if (!site) return <>{header}<Card><EmptyState title="Add a website first" action={<ButtonLink href="/websites">Websites</ButtonLink>} /></Card></>;

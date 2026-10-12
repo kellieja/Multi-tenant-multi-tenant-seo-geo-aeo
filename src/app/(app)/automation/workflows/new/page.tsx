@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireOrgContext } from "@/lib/auth/context";
+import { requireStaffContext } from "@/lib/auth/context";
 import { PageHeader } from "@/components/ui/page";
 import { TEMPLATES } from "@/server/workflow-schema";
 import { WorkflowBuilder } from "../builder";
@@ -7,7 +7,7 @@ import { WorkflowBuilder } from "../builder";
 export const metadata = { title: "New workflow" };
 
 export default async function NewWorkflow() {
-  const ctx = await requireOrgContext();
+  const ctx = await requireStaffContext();
   ctx.assert("automation:write");
   const [sites, clients] = await Promise.all([
     ctx.db.website.findMany({ where: { status: { not: "ARCHIVED" } }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
