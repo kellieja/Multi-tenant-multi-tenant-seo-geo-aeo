@@ -100,6 +100,24 @@ export const PROVIDERS: ProviderDef[] = [
     ],
   },
   {
+    id: "GITHUB", name: "GitHub (pull requests)", category: "CMS", level: "website", auth: "api-key",
+    description: "For sites built from a code repository, including Replit projects synced to GitHub: each approved title, meta description or internal-link change is opened as a pull request against the source. Merging it is the final approval.",
+    powers: ["Open pull requests for approved title, meta description and internal-link changes", "Track merges and open revert pull requests"],
+    fields: [
+      { name: "repository", label: "Repository", type: "text", placeholder: "owner/name" },
+      { name: "token", label: "Fine-grained access token", type: "password", secret: true, hint: "Limited to this one repository, with Contents: read and write and Pull requests: read and write." },
+      { name: "baseBranch", label: "Base branch", type: "text", optional: true, placeholder: "the repository's default branch" },
+      { name: "sitePath", label: "Site folder in the repository", type: "text", optional: true, placeholder: "e.g. client or src (leave empty for the whole repo)" },
+    ],
+    setup: [
+      "In Replit, connect the project to GitHub (Git pane → Connect to GitHub) and push it, if it isn't there already.",
+      "On GitHub: Settings → Developer settings → Fine-grained tokens → Generate. Choose only this repository, and grant Contents and Pull requests: Read and write.",
+      "Enter the repository and token. The connection is verified and must have write access.",
+      "Approved changes become pull requests. After you merge one, redeploy the site in Replit (or wherever it's hosted) unless it deploys automatically from that branch. The next crawl verifies the change.",
+    ],
+    docsUrl: "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens",
+  },
+  {
     id: "DATAFORSEO", name: "DataForSEO", category: "SEO data", level: "organization", auth: "basic",
     description: "Licensed SERP rank tracking, keyword volumes/intent, backlink index, competitor domains and brand-mention search.",
     powers: ["Rank tracking", "Keyword research & volumes", "Backlink inventory & new/lost links", "Competitor & link-gap analysis", "Unlinked brand mentions"],

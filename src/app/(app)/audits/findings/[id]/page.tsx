@@ -90,8 +90,8 @@ export default async function FindingDetail({ params }: { params: Promise<{ id: 
           </Card>
           {f.automatable && ctx.can("findings:write") && ["missing_title", "duplicate_title", "title_length", "missing_meta_description", "duplicate_meta_description", "meta_description_length"].includes(f.issueType) && (
             <Card>
-              <CardHeader title="Propose a fix" description={live ? `Sent to the approval queue, then applied through the ${live === "wordpress" ? "WordPress" : "File host (SFTP/FTPS)"} connector.` : "Live changes need a WordPress or File host (SFTP/FTPS) connection for this website."} />
-              <CardBody>{live ? <ProposeChange websiteId={f.websiteId} url={f.url} findingId={f.id} defaultField={f.issueType.includes("title") ? "title" : "meta_description"} /> : <p className="text-xs text-fg-muted">Connect WordPress or a File host in Integrations. For other sites (e.g. Replit apps), draft copy in Content Studio, approve it and add it to a change pack.</p>}</CardBody>
+              <CardHeader title="Propose a fix" description={live ? `Sent to the approval queue, then ${live === "github" ? "opened as a GitHub pull request" : `applied through the ${live === "wordpress" ? "WordPress" : "File host (SFTP/FTPS)"} connector`}.` : "Live changes need a WordPress, File host (SFTP/FTPS) or GitHub connection for this website."} />
+              <CardBody>{live ? <ProposeChange websiteId={f.websiteId} url={f.url} findingId={f.id} defaultField={f.issueType.includes("title") ? "title" : "meta_description"} /> : <p className="text-xs text-fg-muted">Connect WordPress, a File host or GitHub in Integrations. For other sites (e.g. Replit apps), draft copy in Content Studio, approve it and add it to a change pack.</p>}</CardBody>
             </Card>
           )}
           {f.tasks.length > 0 && (

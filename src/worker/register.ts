@@ -22,3 +22,6 @@ registerTickTask({ name: "report-schedules", run: scheduleReports });
 import { recoverOrphanedJobs } from "@/lib/jobs/queue";
 
 registerTickTask({ name: "recover-orphaned-jobs", run: recoverOrphanedJobs });
+import { syncGitHubPullRequests } from "@/server/site-changes";
+
+registerTickTask({ name: "github-pull-requests", run: syncGitHubPullRequests });

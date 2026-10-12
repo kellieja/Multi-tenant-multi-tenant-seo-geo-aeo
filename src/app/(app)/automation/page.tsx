@@ -280,7 +280,8 @@ export default async function AutomationPage({ searchParams }: { searchParams: P
   async function Changes() {
     const rows = await ctx.db.siteChange.findMany({ where: websiteWhere(ctx), orderBy: { createdAt: "desc" }, take: 100 });
     if (!rows.length) return <Card><EmptyState title="No site changes yet" description="Approved changes applied through CMS connectors are listed here with the previous value kept for rollback." /></Card>;
-    const tone = (s: string) => ({ APPLIED: "good", PENDING_APPROVAL: "warn", APPROVED: "info", FAILED: "bad", ROLLED_BACK: "neutral", REJECTED: "neutral" } as const)[s as "APPLIED"] ?? "neutral";
+    const tone = (s: string) => ({ APPLIED: "good", PENDING_APPROVAL: "warn", APPROVED: "info", PR_OPEN: "info", REVERT_PR_OPEN: "info", FAILED: "bad", ROLLED_BACK: "neutral", REJECTED: "neutral" } as const)[s as "APPLIED"] ?? "neutral";
+    const statusLabel = (s: string) => ({ PR_OPEN: "pull request open", REVERT_PR_OPEN: "revert PR open" } as Record<string, string>)[s] ?? s.toLowerCase().replace("_", " ");
     return (
       <Card>
         <Table>
@@ -289,12 +290,16 @@ export default async function AutomationPage({ searchParams }: { searchParams: P
             {rows.map((c) => (
               <TR key={c.id}>
                 <TD className="max-w-xs truncate text-xs">{c.targetUrl}</TD>
-                <TD><code className="font-mono text-2xs">{c.field}</code></TD>
-                <TD className="max-w-md text-xs"><div className="truncate text-fg-subtle line-through">{c.before ?? "(empty)"}</div><div className="truncate">{c.after}</div></TD>
-                <TD><Badge tone={tone(c.status)}>{c.status.toLowerCase().replace("_", " ")}</Badge>{c.error && <div className="mt-0.5 max-w-xs text-2xs text-bad">{c.error}</div>}</TD>
+                <TD><code className="font-mono text-2xs">{c.field === "file" ? c.targetRef.replace(/^(file|gh):|@[0-9a-f]+$/g, "") : c.field}</code><div className="text-2xs text-fg-subtle">{c.connector}</div></TD>
+                <TD className="max-w-md text-xs">{(() => {
+                  // Whole-file changes: show only the text that changes.
+                  const r = c.field === "file" ? changeRegion(c.before ?? "", c.after, 0) : null;
+                  return <><div className="truncate text-fg-subtle line-through">{(r ? r.removed : c.before) || "(empty)"}</div><div className="truncate">{r ? r.added : c.after}</div></>;
+                })()}</TD>
+                <TD><Badge tone={tone(c.status)}>{statusLabel(c.status)}</Badge>{c.externalUrl && <div className="mt-0.5"><a href={c.externalUrl} target="_blank" rel="noreferrer noopener" className="text-2xs text-accent hover:underline">View pull request</a></div>}{c.error && <div className="mt-0.5 max-w-xs text-2xs text-bad">{c.error}</div>}</TD>
                 <TD className="text-xs text-fg-muted">{c.source}</TD>
                 <TD className="text-xs text-fg-muted">{fmtRelative(c.appliedAt ?? c.createdAt)}</TD>
-                {ctx.can("approvals:decide") && <TD align="right">{c.status === "APPLIED" && c.before != null && <ActionButton action={rollbackAction} fields={{ id: c.id }} size="sm" variant="ghost" confirm="Restore the previous value on the live site?">Roll back</ActionButton>}</TD>}
+                {ctx.can("approvals:decide") && <TD align="right">{c.status === "APPLIED" && c.before != null && <ActionButton action={rollbackAction} fields={{ id: c.id }} size="sm" variant="ghost" confirm={c.connector === "github" ? "Open a pull request that reverts this change?" : "Restore the previous value on the live site?"}>{c.connector === "github" ? "Open revert PR" : "Roll back"}</ActionButton>}</TD>}
               </TR>
             ))}
           </tbody>

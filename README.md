@@ -101,7 +101,8 @@ Every live change waits for approval and keeps a backup for rollback. How it rea
 |---|---|
 | WordPress | WordPress REST API (titles, meta descriptions, content, internal links) |
 | HTML files on a host (cPanel, Hostinger, GoDaddy, a Replit site exported and uploaded) | **File host** integration over SFTP or FTPS. The page's HTML file is edited minimally (title, meta description or internal link), uploaded atomically and checked by reading it back. Plain FTP is refused because it sends the password unencrypted. The SFTP host key is pinned on first connect. |
-| Anything else (Replit Deployments, React/Vite apps, custom builds) | **Change packs** (Automation → Change packs): a checklist, JSON and a ready-to-paste Replit Agent prompt. The next crawl verifies each item. |
+| Sites built from a GitHub repository (including Replit projects synced to GitHub) | **GitHub** integration. The page's current title, meta description or paragraph is located in the source, the exact edit is approved, and approval opens a **pull request**. Merging it is the final step; the app tracks merges and can open a revert PR. After merging, redeploy if your host doesn't deploy from that branch automatically. If the text is built dynamically or appears in several places, it refuses and points to change packs. |
+| Anything else (Replit Deployments without GitHub, custom builds) | **Change packs** (Automation → Change packs): a checklist, JSON and a ready-to-paste Replit Agent prompt. The next crawl verifies each item. |
 
 A built single-page app serves the same `index.html` for every route. A file host therefore can't change per-page titles on it; the app explains this and points to change packs.
 

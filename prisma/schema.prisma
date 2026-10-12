@@ -211,6 +211,7 @@ enum IntegrationProvider {
   SMTP
   SLACK_WEBHOOK
   FILE_HOST
+  GITHUB
 }
 
 enum ConnectionStatus {
@@ -997,6 +998,8 @@ model SiteChange {
   approvalId     String?
   source         String
   error          String?
+  // GitHub connector: the pull request this change was opened as.
+  externalUrl    String?
   appliedAt      DateTime?
   rolledBackAt   DateTime?
   createdAt      DateTime  @default(now())

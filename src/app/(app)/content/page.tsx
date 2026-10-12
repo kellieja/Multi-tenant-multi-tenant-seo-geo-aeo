@@ -160,7 +160,7 @@ export default async function ContentPage({ searchParams }: { searchParams: Prom
                     {s.status !== "APPROVED" && <ActionButton action={suggestionStatusAction} fields={{ id: s.id, status: "APPROVED" }} size="sm"><Check className="size-3.5" />Approve</ActionButton>}
                     {s.status === "APPROVED" && s.kind === "METADATA" && (wp
                       ? <ActionButton action={proposeSuggestionAction} fields={{ id: s.id }} size="sm" variant="primary">Propose to live site</ActionButton>
-                      : <span className="text-2xs text-fg-subtle">Connect WordPress or a File host to propose it, or add it to a change pack</span>)}
+                      : <span className="text-2xs text-fg-subtle">Connect WordPress, a File host or GitHub to propose it, or add it to a change pack</span>)}
                     {(s.status === "APPROVED" || s.status === "REJECTED") && <ActionButton action={suggestionStatusAction} fields={{ id: s.id, status: "SUGGESTED" }} size="sm" variant="ghost">Reopen</ActionButton>}
                   </div>
                 )}

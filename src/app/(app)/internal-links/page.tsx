@@ -71,7 +71,7 @@ export default async function InternalLinksPage({ searchParams }: { searchParams
             <Link key={k} href={href("suggestions", `&status=${k}`)} className={`rounded-md px-2.5 py-1 ${view === k ? "bg-surface-2 font-medium" : "text-fg-muted"}`}>{l} <span className="text-fg-subtle">{count(k)}</span></Link>
           ))}
         </div>
-        {view === "APPROVED" && !wp && <Notice tone="info">Add accepted links in your CMS. The next crawl and link analysis will detect them and mark them applied. Or create a change pack (Automation → Change packs), or connect WordPress or a File host (SFTP/FTPS) in <Link href="/integrations" className="text-accent hover:underline">Integrations</Link> to propose changes directly, with approval, backup and rollback.</Notice>}
+        {view === "APPROVED" && !wp && <Notice tone="info">Add accepted links in your CMS. The next crawl and link analysis will detect them and mark them applied. Or create a change pack (Automation → Change packs), or connect WordPress, a File host (SFTP/FTPS) or GitHub in <Link href="/integrations" className="text-accent hover:underline">Integrations</Link> to propose changes directly, with approval, backup and rollback.</Notice>}
         {!rows.length ? <Card><EmptyState title={view === "SUGGESTED" ? "No suggestions to review" : "Nothing here"} description={view === "SUGGESTED" ? "Run “Find link opportunities”. Suggestions come from paragraphs on your pages that mention another page's tracked keyword, Search Console queries, H1 or title, and that don't already link to it." : undefined} /></Card> : (
           <Card>
             <Table>

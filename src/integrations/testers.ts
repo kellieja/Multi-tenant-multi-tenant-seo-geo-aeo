@@ -29,6 +29,22 @@ async function jsonFetch(url: string, init: RequestInit, provider: IntegrationPr
  * Each tester returns a human-readable, actionable message on failure.
  */
 export const TESTERS: Partial<Record<IntegrationProvider, (s: Record<string, string>, existingConfig?: Record<string, unknown>) => Promise<TestResult>>> = {
+  /** Checks the token can see and push to the repository and that the base branch exists. */
+  async GITHUB(s) {
+    const { GitHubClient, parseRepository } = await import("./github");
+    let repo: string;
+    try { repo = parseRepository(s.repository); } catch (err) { return { ok: false, message: (err as Error).message }; }
+    try {
+      const gh = new GitHubClient(s.token, repo);
+      const info = await gh.repoInfo();
+      if (info.permissions && !info.permissions.push) return { ok: false, message: `The token can read ${repo} but can't write to it. Grant Contents: Read and write, and Pull requests: Read and write.` };
+      const base = s.baseBranch?.trim() || info.default_branch;
+      await gh.branchSha(base);
+      return { ok: true, message: `Connected to ${repo}; pull requests will target ${base}.`, externalAccountId: repo, config: { repository: repo, baseBranch: base, defaultBranch: info.default_branch, sitePath: (s.sitePath ?? "").trim() } };
+    } catch (err) {
+      return { ok: false, message: (err as Error).message };
+    }
+  },
   /** Connects, checks the document root has an index.html, and pins the SFTP host key on first connect. */
   async FILE_HOST(s, existingConfig) {
     const { FileHostClient, normalizeDocRoot } = await import("./filehost");
