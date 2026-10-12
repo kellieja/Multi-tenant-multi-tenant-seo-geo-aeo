@@ -50,7 +50,8 @@ export async function createRenderer(opts: RendererOptions): Promise<PageRendere
     const { chromium } = await import("playwright-core");
     browser = await chromium.launch({
       headless: true,
-      executablePath: process.env.CHROMIUM_PATH || undefined,
+      // Empty or the string "undefined" (an unset variable copied into process.env) means: use Playwright's Chromium.
+      executablePath: process.env.CHROMIUM_PATH && process.env.CHROMIUM_PATH !== "undefined" ? process.env.CHROMIUM_PATH : undefined,
       // No WebRTC (it can open UDP to arbitrary hosts outside our request routing).
       args: ["--disable-dev-shm-usage", "--disable-features=WebRtcHideLocalIpsWithMdns", "--force-webrtc-ip-handling-policy=disable_non_proxied_udp"],
     });

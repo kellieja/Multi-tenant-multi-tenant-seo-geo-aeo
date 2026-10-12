@@ -6,7 +6,7 @@ import { spaSite } from "./fixtures/spa";
 import { fixtureSite } from "./fixtures/site";
 
 // Locally, point CHROMIUM_PATH (or PW_CHROMIUM_PATH) at a Chromium binary; CI installs one with Playwright.
-process.env.CHROMIUM_PATH ??= process.env.PW_CHROMIUM_PATH;
+if (!process.env.CHROMIUM_PATH && process.env.PW_CHROMIUM_PATH) process.env.CHROMIUM_PATH = process.env.PW_CHROMIUM_PATH;
 
 const spa = spaSite();
 const ssr = fixtureSite();

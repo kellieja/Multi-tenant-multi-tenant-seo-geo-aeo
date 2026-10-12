@@ -5,7 +5,6 @@ import type { OrgContext } from "@/lib/auth/context";
 import { assertWebsiteAccess } from "@/lib/auth/context";
 import type { JobContext } from "@/lib/jobs/context";
 import { UserError } from "@/lib/errors";
-import { safeFetch } from "@/lib/net/safe-fetch";
 import { isSameSite, normalizeUrl } from "@/lib/url";
 import { sha256 } from "@/lib/crypto";
 import { validateStructuredData } from "@/audit/schema";

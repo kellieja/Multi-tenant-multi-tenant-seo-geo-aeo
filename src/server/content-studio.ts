@@ -8,7 +8,7 @@ import { sha256 } from "@/lib/crypto";
 import { writeAuditLog } from "@/lib/audit-log";
 import { fetchHtmlPolitely } from "@/lib/net/polite-fetch";
 import { isSameSite } from "@/lib/url";
-import { parseHtml, simhash, hamming, type ParsedPage } from "@/crawler/parse";
+import { parseHtml, hamming, type ParsedPage } from "@/crawler/parse";
 import { findConnection, withSyncLog } from "@/integrations/connections";
 import { DataForSeoClient } from "@/integrations/dataforseo";
 import { getAiClient, NoAiProviderError } from "@/integrations/ai";
