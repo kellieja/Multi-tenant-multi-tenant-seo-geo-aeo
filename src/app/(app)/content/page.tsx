@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Check, X, PenLine } from "lucide-react";
 import { requireStaffContext } from "@/lib/auth/context";
+import { liveConnectorType } from "@/server/site-changes";
 import { resolveSite, SitePicker } from "@/components/data/site-picker";
 import { PageHeader, EmptyState, Notice } from "@/components/ui/page";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -35,7 +36,7 @@ export default async function ContentPage({ searchParams }: { searchParams: Prom
   const [ai, dfs, wp, pendingCount] = await Promise.all([
     ctx.db.integrationConnection.findFirst({ where: { provider: { in: ["ANTHROPIC", "OPENAI", "GEMINI", "PERPLEXITY"] }, websiteId: null, status: "CONNECTED" } }),
     ctx.db.integrationConnection.findFirst({ where: { provider: "DATAFORSEO", websiteId: null, status: "CONNECTED" } }),
-    ctx.db.integrationConnection.findFirst({ where: { provider: "WORDPRESS", websiteId: site.id, status: "CONNECTED" } }),
+    liveConnectorType(ctx.org.id, site),
     ctx.db.contentSuggestion.count({ where: { websiteId: site.id, kind: { in: ["METADATA", "AEO_ANSWER", "BRIEF"] }, status: { in: ["SUGGESTED", "EDITED"] } } }),
   ]);
   const href = (t: string, extra = "") => `/content?websiteId=${site.id}&tab=${t}${extra}`;
@@ -159,7 +160,7 @@ export default async function ContentPage({ searchParams }: { searchParams: Prom
                     {s.status !== "APPROVED" && <ActionButton action={suggestionStatusAction} fields={{ id: s.id, status: "APPROVED" }} size="sm"><Check className="size-3.5" />Approve</ActionButton>}
                     {s.status === "APPROVED" && s.kind === "METADATA" && (wp
                       ? <ActionButton action={proposeSuggestionAction} fields={{ id: s.id }} size="sm" variant="primary">Propose to live site</ActionButton>
-                      : <span className="text-2xs text-fg-subtle">Connect WordPress to propose it, or copy it into your CMS</span>)}
+                      : <span className="text-2xs text-fg-subtle">Connect WordPress or a File host to propose it, or add it to a change pack</span>)}
                     {(s.status === "APPROVED" || s.status === "REJECTED") && <ActionButton action={suggestionStatusAction} fields={{ id: s.id, status: "SUGGESTED" }} size="sm" variant="ghost">Reopen</ActionButton>}
                   </div>
                 )}

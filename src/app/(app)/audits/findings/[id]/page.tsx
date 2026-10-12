@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireStaffContext } from "@/lib/auth/context";
+import { liveConnectorType } from "@/server/site-changes";
 import { PageHeader } from "@/components/ui/page";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Badge, severityTone } from "@/components/ui/badge";
@@ -19,6 +20,7 @@ export default async function FindingDetail({ params }: { params: Promise<{ id: 
   const ctx = await requireStaffContext();
   const f = await ctx.db.auditFinding.findUnique({ where: { id }, include: { website: true, events: { orderBy: { createdAt: "desc" } }, tasks: true } });
   if (!f || (ctx.websiteScope && !ctx.websiteScope.includes(f.websiteId))) notFound();
+  const live = await liveConnectorType(ctx.org.id, f.website);
   const users = await prisma.user.findMany({ where: { id: { in: f.events.map((e) => e.userId).filter(Boolean) as string[] } }, select: { id: true, name: true } });
   const userName = new Map(users.map((u) => [u.id, u.name]));
   const factors = (f.priorityFactors ?? []) as unknown as PriorityFactor[];
@@ -88,8 +90,8 @@ export default async function FindingDetail({ params }: { params: Promise<{ id: 
           </Card>
           {f.automatable && ctx.can("findings:write") && ["missing_title", "duplicate_title", "title_length", "missing_meta_description", "duplicate_meta_description", "meta_description_length"].includes(f.issueType) && (
             <Card>
-              <CardHeader title="Propose a fix" description={f.website.cmsType === "WORDPRESS" ? "Sent to the approval queue, then applied through the WordPress connector." : "Live changes need a WordPress site with a connected WordPress integration."} />
-              <CardBody>{f.website.cmsType === "WORDPRESS" ? <ProposeChange websiteId={f.websiteId} url={f.url} findingId={f.id} defaultField={f.issueType.includes("title") ? "title" : "meta_description"} /> : <p className="text-xs text-fg-muted">Set the website CMS to WordPress and connect it in Integrations. Or use Content Studio to draft copy for manual publishing.</p>}</CardBody>
+              <CardHeader title="Propose a fix" description={live ? `Sent to the approval queue, then applied through the ${live === "wordpress" ? "WordPress" : "File host (SFTP/FTPS)"} connector.` : "Live changes need a WordPress or File host (SFTP/FTPS) connection for this website."} />
+              <CardBody>{live ? <ProposeChange websiteId={f.websiteId} url={f.url} findingId={f.id} defaultField={f.issueType.includes("title") ? "title" : "meta_description"} /> : <p className="text-xs text-fg-muted">Connect WordPress or a File host in Integrations. For other sites (e.g. Replit apps), draft copy in Content Studio, approve it and add it to a change pack.</p>}</CardBody>
             </Card>
           )}
           {f.tasks.length > 0 && (

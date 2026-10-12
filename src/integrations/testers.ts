@@ -28,7 +28,30 @@ async function jsonFetch(url: string, init: RequestInit, provider: IntegrationPr
  * Verifies credentials with a real, cheap API call before a connection is marked CONNECTED.
  * Each tester returns a human-readable, actionable message on failure.
  */
-export const TESTERS: Partial<Record<IntegrationProvider, (s: Record<string, string>) => Promise<TestResult>>> = {
+export const TESTERS: Partial<Record<IntegrationProvider, (s: Record<string, string>, existingConfig?: Record<string, unknown>) => Promise<TestResult>>> = {
+  /** Connects, checks the document root has an index.html, and pins the SFTP host key on first connect. */
+  async FILE_HOST(s, existingConfig) {
+    const { FileHostClient, normalizeDocRoot } = await import("./filehost");
+    let client;
+    try {
+      client = await FileHostClient.open(s as never, (existingConfig ?? {}) as never);
+    } catch (err) {
+      return { ok: false, message: (err as Error).message };
+    }
+    try {
+      const root = normalizeDocRoot(s.docRoot || "/");
+      const index = await client.read(`${root === "/" ? "" : root}/index.html`).catch(() => null);
+      if (index == null) return { ok: false, message: `Connected, but there's no index.html in ${root}. Check the document root.` };
+      return {
+        ok: true,
+        message: `Connected over ${s.protocol.toUpperCase()}; found ${root}/index.html${client.hostKeySha256 ? `. Host key pinned (SHA256:${client.hostKeySha256.slice(0, 16)}…)` : ""}.`,
+        externalAccountId: `${s.username}@${s.host}`,
+        config: { protocol: s.protocol, docRoot: root, ...(client.hostKeySha256 ? { hostKeySha256: client.hostKeySha256 } : {}) },
+      };
+    } finally {
+      await client.close();
+    }
+  },
   async DATAFORSEO(s) {
     const { res, body } = await jsonFetch("https://api.dataforseo.com/v3/appendix/user_data", { headers: { authorization: basic(s.login, s.password) } }, "DATAFORSEO");
     if (res.status === 401) return { ok: false, message: "DataForSEO rejected the login/password." };

@@ -5,7 +5,7 @@ import { ExternalLink } from "lucide-react";
 import { Dialog } from "@/components/ui/dialog";
 import { ActionForm, fieldError } from "@/components/ui/action-form";
 import { Button } from "@/components/ui/button";
-import { Field, Input, Select } from "@/components/ui/form";
+import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { Notice } from "@/components/ui/page";
 import type { ProviderDef } from "@/integrations/registry";
 import { connectAction, googleConnectAction, googlePropertiesAction, selectPropertyAction } from "./actions";
@@ -45,7 +45,13 @@ export function ConnectDialog({ def, sites, missingEnv, appUrl }: { def: Provide
                   {def.level === "website" && <Field label="Website" htmlFor="c-site"><Select id="c-site" name="websiteId">{sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select></Field>}
                   {(def.fields ?? []).map((f) => (
                     <Field key={f.name} label={`${f.label}${f.optional ? " (optional)" : ""}`} htmlFor={`f-${f.name}`} hint={f.hint} error={fieldError(state, f.name)}>
-                      <Input id={`f-${f.name}`} name={f.name} type={f.type} placeholder={f.placeholder} required={!f.optional} autoComplete="off" />
+                      {f.type === "select" ? (
+                        <Select id={`f-${f.name}`} name={f.name}>{(f.options ?? []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</Select>
+                      ) : f.type === "textarea" ? (
+                        <Textarea id={`f-${f.name}`} name={f.name} rows={4} placeholder={f.placeholder} required={!f.optional} autoComplete="off" className="font-mono text-xs" />
+                      ) : (
+                        <Input id={`f-${f.name}`} name={f.name} type={f.type} placeholder={f.placeholder} required={!f.optional} autoComplete="off" />
+                      )}
                     </Field>
                   ))}
                   {state && !state.ok && <Notice tone="bad">{state.error}</Notice>}

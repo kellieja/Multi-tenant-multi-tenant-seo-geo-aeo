@@ -148,7 +148,7 @@ export async function retestConnection(ctx: OrgContext, connectionId: string) {
     return "Google access verified.";
   }
   const tester = TESTERS[conn.provider];
-  const res = tester ? await tester(readSecret(conn)) : { ok: true, message: "OK" };
+  const res = tester ? await tester(readSecret(conn), (conn.config ?? {}) as Record<string, unknown>) : { ok: true, message: "OK" };
   await ctx.db.integrationConnection.update({ where: { id: conn.id }, data: res.ok ? { status: "CONNECTED", lastError: null } : { status: "ERROR", lastError: res.message } });
   await prisma.syncLog.create({ data: { organizationId: ctx.org.id, connectionId: conn.id, websiteId: conn.websiteId, operation: "connect.verify", status: res.ok ? "SUCCEEDED" : "FAILED", message: res.message, finishedAt: new Date() } });
   if (!res.ok) throw new UserError(res.message);

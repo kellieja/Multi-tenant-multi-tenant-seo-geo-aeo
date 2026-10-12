@@ -7,10 +7,8 @@ import { UserError } from "@/lib/errors";
 import { writeAuditLog } from "@/lib/audit-log";
 import { openSitePageFetcher } from "./page-fetch";
 import { normalizeUrl } from "@/lib/url";
-import { findConnection } from "@/integrations/connections";
-import { WordPressClient } from "@/integrations/wordpress";
 import { readSettings } from "./websites";
-import { proposeSiteChange } from "./site-changes";
+import { proposeEdit } from "./site-changes";
 
 // ───────────── Phrase selection
 
@@ -256,8 +254,8 @@ export async function setLinkSuggestionStatus(ctx: OrgContext, id: string, statu
 }
 
 /**
- * Builds the modified WordPress content (link inserted around the reviewed anchor) and
- * routes it through the standard site-change approval, backup and rollback flow.
+ * Sends an accepted link through the live-change pipeline (WordPress or a File host), which
+ * computes the exact edit, keeps a backup and waits for approval before anything is written.
  */
 export async function proposeInternalLink(ctx: OrgContext, id: string) {
   ctx.assert("content:write");
@@ -266,17 +264,7 @@ export async function proposeInternalLink(ctx: OrgContext, id: string) {
   await assertWebsiteAccess(ctx, s.websiteId);
   if (s.status !== "APPROVED") throw new UserError("Accept the suggestion before proposing it to the site");
   if (s.changeId) throw new UserError("A site change was already proposed for this link");
-  const site = await ctx.db.website.findUniqueOrThrow({ where: { id: s.websiteId } });
-  if (site.cmsType !== "WORDPRESS") throw new UserError("Live changes are supported for WordPress sites. Add the link in your CMS, and the next crawl will mark it done.");
-  const conn = await findConnection(ctx.org.id, "WORDPRESS", site.id);
-  if (!conn || conn.status !== "CONNECTED") throw new UserError("Connect WordPress for this website in Integrations first");
-  const wp = new WordPressClient(conn);
-  const post = await wp.findByUrl(s.sourceUrl);
-  if (!post) throw new UserError("Couldn't find the WordPress post or page for the source URL");
-  const content = await wp.readField(post.type, post.id, "content");
-  const updated = content ? insertLink(content, s.anchor, s.targetUrl) : null;
-  if (!updated) throw new UserError(`Couldn't find “${s.anchor}” in a paragraph of the stored WordPress content (it may come from a template or another block). Add the link manually.`);
-  const change = await proposeSiteChange(ctx, { websiteId: site.id, url: s.sourceUrl, field: "content", value: updated, source: `internal-link:${s.id}` });
+  const change = await proposeEdit(ctx, { websiteId: s.websiteId, url: s.sourceUrl, edit: { kind: "link", anchor: s.anchor, href: s.targetUrl }, source: `internal-link:${s.id}` });
   await ctx.db.internalLinkSuggestion.update({ where: { id }, data: { changeId: change.id } });
   return change;
 }

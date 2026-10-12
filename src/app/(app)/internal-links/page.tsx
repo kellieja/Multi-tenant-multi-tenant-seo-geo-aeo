@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Check, Network, X } from "lucide-react";
 import { requireStaffContext } from "@/lib/auth/context";
+import { liveConnectorType } from "@/server/site-changes";
 import { resolveSite, SitePicker } from "@/components/data/site-picker";
 import { PageHeader, EmptyState, Notice } from "@/components/ui/page";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
@@ -32,7 +33,7 @@ export default async function InternalLinksPage({ searchParams }: { searchParams
     linkGraphStats(site.id),
     ctx.db.job.findFirst({ where: { websiteId: site.id, type: "internal-links" }, orderBy: { queuedAt: "desc" } }),
     ctx.db.internalLinkSuggestion.groupBy({ by: ["status"], where: { websiteId: site.id }, _count: true }),
-    ctx.db.integrationConnection.findFirst({ where: { provider: "WORDPRESS", websiteId: site.id, status: "CONNECTED" } }),
+    liveConnectorType(ctx.org.id, site),
   ]);
   if (!stats) return <>{header}<Card><EmptyState icon={<Network className="size-5" />} title="Crawl the site first" description="Internal link analysis reads the link graph and paragraph text from the latest crawl." action={<ButtonLink href={`/audits?websiteId=${site.id}`}>Go to audits</ButtonLink>} /></Card></>;
   const count = (s: string) => counts.find((c) => c.status === s)?._count ?? 0;
@@ -70,7 +71,7 @@ export default async function InternalLinksPage({ searchParams }: { searchParams
             <Link key={k} href={href("suggestions", `&status=${k}`)} className={`rounded-md px-2.5 py-1 ${view === k ? "bg-surface-2 font-medium" : "text-fg-muted"}`}>{l} <span className="text-fg-subtle">{count(k)}</span></Link>
           ))}
         </div>
-        {view === "APPROVED" && !wp && <Notice tone="info">Add accepted links in your CMS. The next crawl and link analysis will detect them and mark them applied. Connect WordPress in <Link href="/integrations" className="text-accent hover:underline">Integrations</Link> to propose changes directly (with approval, backup and rollback).</Notice>}
+        {view === "APPROVED" && !wp && <Notice tone="info">Add accepted links in your CMS. The next crawl and link analysis will detect them and mark them applied. Or create a change pack (Automation → Change packs), or connect WordPress or a File host (SFTP/FTPS) in <Link href="/integrations" className="text-accent hover:underline">Integrations</Link> to propose changes directly, with approval, backup and rollback.</Notice>}
         {!rows.length ? <Card><EmptyState title={view === "SUGGESTED" ? "No suggestions to review" : "Nothing here"} description={view === "SUGGESTED" ? "Run “Find link opportunities”. Suggestions come from paragraphs on your pages that mention another page's tracked keyword, Search Console queries, H1 or title, and that don't already link to it." : undefined} /></Card> : (
           <Card>
             <Table>

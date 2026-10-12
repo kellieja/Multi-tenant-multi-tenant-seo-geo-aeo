@@ -1,6 +1,5 @@
-import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
-import { isPublicIp } from "./ssrf";
+import { resolvePublicHost } from "./resolve";
 import { UserError } from "@/lib/errors";
 
 const PORTS = new Set([25, 465, 587, 2525]);
@@ -18,13 +17,13 @@ export async function safeSmtpOptions(raw: string, opts: { allowPrivate?: boolea
   const secure = u.protocol === "smtps:";
   const port = u.port ? Number(u.port) : secure ? 465 : 587;
   if (!PORTS.has(port)) throw new UserError("SMTP port must be 25, 465, 587 or 2525");
-  const host = u.hostname.replace(/^\[|\]$/g, "");
-  if (!host) throw new UserError("SMTP URL needs a host");
-  const allowPrivate = opts.allowPrivate ?? (process.env.ALLOW_PRIVATE_NETWORK_FETCH === "true" && process.env.NODE_ENV !== "production");
-  const addrs = isIP(host) ? [{ address: host }] : await lookup(host, { all: true }).catch(() => { throw new UserError(`Couldn't resolve ${host}`); });
-  if (!allowPrivate && addrs.some((a) => !isPublicIp(a.address))) throw new UserError("SMTP host must be a public mail server");
+  if (!u.hostname) throw new UserError("SMTP URL needs a host");
+  const r = await resolvePublicHost(u.hostname, { allowPrivate: opts.allowPrivate, what: "SMTP host" }).catch((e: Error) => {
+    throw new UserError(/public host/.test(e.message) ? "SMTP host must be a public mail server" : e.message);
+  });
+  const host = r.hostname;
   return {
-    host: addrs[0].address,
+    host: r.address,
     port,
     secure: secure || port === 465,
     auth: u.username ? { user: decodeURIComponent(u.username), pass: decodeURIComponent(u.password) } : undefined,

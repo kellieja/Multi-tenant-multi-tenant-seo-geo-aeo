@@ -93,6 +93,18 @@ Rendering runs in the **worker** and needs Chromium. The Docker image includes i
 
 Inside the browser, every request the page makes goes through the same SSRF guard as the crawler. WebSockets and service workers are blocked.
 
+### Applying approved changes to live sites
+
+Every live change waits for approval and keeps a backup for rollback. How it reaches the site depends on the connection:
+
+| Site | How changes are applied |
+|---|---|
+| WordPress | WordPress REST API (titles, meta descriptions, content, internal links) |
+| HTML files on a host (cPanel, Hostinger, GoDaddy, a Replit site exported and uploaded) | **File host** integration over SFTP or FTPS. The page's HTML file is edited minimally (title, meta description or internal link), uploaded atomically and checked by reading it back. Plain FTP is refused because it sends the password unencrypted. The SFTP host key is pinned on first connect. |
+| Anything else (Replit Deployments, React/Vite apps, custom builds) | **Change packs** (Automation → Change packs): a checklist, JSON and a ready-to-paste Replit Agent prompt. The next crawl verifies each item. |
+
+A built single-page app serves the same `index.html` for every route. A file host therefore can't change per-page titles on it; the app explains this and points to change packs.
+
 ### Tests
 
 ```bash

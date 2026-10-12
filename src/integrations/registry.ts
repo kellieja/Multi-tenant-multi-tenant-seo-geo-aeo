@@ -5,7 +5,9 @@ export type AuthKind = "oauth-google" | "api-key" | "basic" | "wordpress" | "smt
 export interface ProviderField {
   name: string;
   label: string;
-  type: "text" | "password" | "url" | "email";
+  type: "text" | "password" | "url" | "email" | "textarea" | "select";
+  /** Choices for type "select". */
+  options?: { value: string; label: string }[];
   placeholder?: string;
   hint?: string;
   secret?: boolean;
@@ -76,6 +78,26 @@ export const PROVIDERS: ProviderDef[] = [
       "To let approved changes update SEO meta descriptions, the meta key must be exposed via register_post_meta(..., ['show_in_rest' => true]).",
     ],
     docsUrl: "https://developer.wordpress.org/rest-api/",
+  },
+  {
+    id: "FILE_HOST", name: "File host (SFTP / FTPS)", category: "CMS", level: "website", auth: "basic",
+    description: "Applies approved changes to static HTML sites on hosts like Hostinger, GoDaddy or cPanel (including sites exported from Replit): titles, meta descriptions and internal links, with a backup, an upload check and rollback.",
+    powers: ["Apply approved title, meta description and internal-link changes to HTML files"],
+    fields: [
+      { name: "protocol", label: "Protocol", type: "select", options: [{ value: "sftp", label: "SFTP (SSH)" }, { value: "ftps", label: "FTPS (FTP over TLS)" }], hint: "Plain FTP isn't supported: it sends your password unencrypted." },
+      { name: "host", label: "Host", type: "text", placeholder: "ftp.example.com" },
+      { name: "port", label: "Port", type: "text", optional: true, placeholder: "22 for SFTP, 21 or 990 for FTPS" },
+      { name: "username", label: "Username", type: "text" },
+      { name: "password", label: "Password", type: "password", secret: true, optional: true, hint: "Use a dedicated account limited to the site's folder if your host allows it." },
+      { name: "privateKey", label: "SSH private key (SFTP)", type: "textarea", secret: true, optional: true, hint: "PEM/OpenSSH key instead of a password." },
+      { name: "docRoot", label: "Document root", type: "text", placeholder: "/public_html", hint: "Folder on the server that holds the site's index.html." },
+    ],
+    setup: [
+      "In your host's control panel, find the SFTP or FTPS details (often under Files → FTP Accounts or SSH Access). Prefer SFTP.",
+      "Create an FTP/SFTP account limited to the website's folder if you can.",
+      "Enter the details and the document root (e.g. /public_html or /htdocs). The connection is verified, and for SFTP the server's host key is pinned.",
+      "Works for sites made of HTML files. A single-page app (e.g. a built React app) has one index.html for every page, so per-page changes need a change pack or the GitHub connector instead.",
+    ],
   },
   {
     id: "DATAFORSEO", name: "DataForSEO", category: "SEO data", level: "organization", auth: "basic",

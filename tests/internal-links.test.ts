@@ -115,7 +115,7 @@ describe("applying an internal link to WordPress", () => {
     await decideApproval(manager, change.approvalId!, "APPROVED");
     // Someone edits the page after the proposal: applying would discard their edit, so it's refused
     wp.page.content = original.replace("strict", "very strict");
-    await expect(processSiteChangeApply(jc({ id: "a", organizationId: owner.org.id, websiteId: w.id, type: "site-change-apply", payload: { siteChangeId: change.id } }))).rejects.toThrow(/content changed/);
+    await expect(processSiteChangeApply(jc({ id: "a", organizationId: owner.org.id, websiteId: w.id, type: "site-change-apply", payload: { siteChangeId: change.id } }))).rejects.toThrow(/changed after this change was proposed/);
     expect(wp.page.content).toContain("very strict");
     expect((await prisma.siteChange.findUniqueOrThrow({ where: { id: change.id } })).status).toBe("FAILED");
 

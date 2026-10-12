@@ -27,7 +27,7 @@ const securityHeaders = [
 
 const config: NextConfig = {
   poweredByHeader: false,
-  serverExternalPackages: ["@node-rs/argon2", "bullmq", "ioredis", "@react-pdf/renderer", "playwright-core"],
+  serverExternalPackages: ["@node-rs/argon2", "bullmq", "ioredis", "@react-pdf/renderer", "playwright-core", "ssh2", "ssh2-sftp-client", "basic-ftp"],
   experimental: {
     serverActions: { bodySizeLimit: "5mb" },
   },
