@@ -52,6 +52,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Headless Chromium for the JavaScript-rendering tests.
+      - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test

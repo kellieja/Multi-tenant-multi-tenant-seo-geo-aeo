@@ -4,6 +4,7 @@ import { normalizeUrl } from "@/lib/url";
 import { parseRobots, isAllowed, groupFor, type ParsedRobots } from "./robots";
 import { loadSitemaps, type SitemapResult } from "./sitemap";
 import { parseHtml, type ParsedPage, type StructuredDataItem, type Heading, type ParsedImage } from "./parse";
+import { createRenderer, needsRendering, type PageRenderer } from "./render";
 
 export interface CrawlOptions {
   baseUrl: string;
@@ -22,7 +23,31 @@ export interface CrawlOptions {
   maxImageChecks?: number;
   onProgress?: (p: { crawled: number; discovered: number; message: string }) => Promise<void> | void;
   isCancelled?: () => Promise<boolean>;
+  /**
+   * JavaScript rendering. "auto" renders the homepage once and switches the whole crawl to
+   * rendered pages only if content appears after JavaScript runs; "always"/"off" force it.
+   */
+  render?: RenderMode;
+  /** Injected in tests; defaults to headless Chromium. */
+  rendererFactory?: () => Promise<PageRenderer>;
 }
+
+export type RenderMode = "auto" | "always" | "off";
+
+export interface RenderInfo {
+  mode: RenderMode;
+  /** Whether pages in this crawl were rendered. */
+  active: boolean;
+  reasons: string[];
+  /** Raw vs rendered stats for the probe page (auto mode). */
+  probe?: { url: string; raw: PageStats; rendered: PageStats };
+  /** Rendering was wanted but Chromium couldn't start. */
+  error?: string;
+}
+
+export interface PageStats { wordCount: number; links: number; title: string | null; h1: number }
+
+const statsOf = (p: ParsedPage): PageStats => ({ wordCount: p.wordCount, links: p.links.length, title: p.title, h1: p.h1.length });
 
 export interface CrawledPageRecord {
   url: string;
@@ -66,6 +91,8 @@ export interface CrawledPageRecord {
   scriptCount: number;
   outlinks: number;
   inlinks: number;
+  /** Present when the page was rendered: what the raw HTML contained, for the JS-dependence audit. */
+  render?: { raw: PageStats; pageErrors: string[] } | null;
 }
 
 export interface CrawlLinkRecord {
@@ -96,6 +123,7 @@ export interface CrawlResult {
   imageChecks: Map<string, ResourceCheck>;
   limitReached: boolean;
   cancelled: boolean;
+  rendering: RenderInfo;
   startedAt: Date;
   finishedAt: Date;
 }
@@ -176,6 +204,38 @@ export async function crawlSite(opts: CrawlOptions): Promise<CrawlResult> {
     for (const u of sitemapUrls) enqueue(u, 1);
   }
 
+  // 4) rendering decision
+  const rendering: RenderInfo = { mode: opts.render ?? "off", active: false, reasons: [] };
+  let renderer: PageRenderer | null = null;
+  if (rendering.mode !== "off") {
+    try {
+      renderer = await (opts.rendererFactory ?? (() => createRenderer({ userAgent: opts.userAgent, allowPrivate: opts.allowPrivate })))();
+    } catch (err) {
+      rendering.error = (err as Error).message;
+    }
+  }
+  if (renderer && rendering.mode === "always") {
+    rendering.active = true;
+    rendering.reasons.push("JavaScript rendering is set to always for this site");
+  } else if (renderer && rendering.mode === "auto") {
+    const probeUrl = normalizeUrl(base.toString())!;
+    try {
+      const raw = await safeFetch(probeUrl, { headers, maxRedirects: 10, allowPrivate: opts.allowPrivate });
+      if (raw.status < 400 && /html/i.test(raw.headers.get("content-type") ?? "html")) {
+        const r = await renderer.render(raw.finalUrl);
+        const rawStats = statsOf(parseHtml(raw.body, raw.finalUrl));
+        const renderedStats = statsOf(parseHtml(r.html, r.finalUrl));
+        const verdict = needsRendering(rawStats, renderedStats);
+        rendering.active = verdict.required;
+        rendering.reasons = verdict.required ? verdict.reasons : ["Raw HTML already contains the page content; rendering not needed"];
+        rendering.probe = { url: raw.finalUrl, raw: rawStats, rendered: renderedStats };
+      }
+    } catch (err) {
+      rendering.error = `Rendering check failed: ${(err as Error).message.slice(0, 200)}`;
+    }
+  }
+  if (!rendering.active && renderer) { await renderer.close(); renderer = null; }
+
   let nextSlot = 0;
   let limitReached = false;
   let cancelled = false;
@@ -217,7 +277,18 @@ export async function crawlSite(opts: CrawlOptions): Promise<CrawlResult> {
       }
       rec.isHtml = /text\/html|application\/xhtml/i.test(rec.contentType ?? "");
       if (!rec.isHtml || res.status >= 400 || !res.body) return;
-      const parsed: ParsedPage = parseHtml(res.body, res.finalUrl);
+      let parsed: ParsedPage = parseHtml(res.body, res.finalUrl);
+      if (renderer) {
+        // Status, headers and redirects come from the raw response; content from the rendered DOM.
+        const rawStats = statsOf(parsed);
+        try {
+          const r = await renderer.render(res.finalUrl);
+          parsed = parseHtml(r.html, res.finalUrl);
+          rec.render = { raw: rawStats, pageErrors: r.pageErrors };
+        } catch (err) {
+          rec.error = `Rendering failed; raw HTML used: ${(err as Error).message.slice(0, 200)}`;
+        }
+      }
       Object.assign(rec, {
         title: parsed.title, titleCount: parsed.titleCount, metaDescription: parsed.metaDescription,
         metaDescriptionCount: parsed.metaDescriptionCount, robotsMeta: parsed.robotsMeta, canonical: parsed.canonical,
@@ -257,7 +328,11 @@ export async function crawlSite(opts: CrawlOptions): Promise<CrawlResult> {
       }
     }
   });
-  await Promise.all(workers);
+  try {
+    await Promise.all(workers);
+  } finally {
+    await renderer?.close();
+  }
   if (queue.length && pages.size >= opts.maxPages) limitReached = true;
 
   // Inlinks (unique source pages per target)
@@ -290,7 +365,7 @@ export async function crawlSite(opts: CrawlOptions): Promise<CrawlResult> {
 
   return {
     baseUrl: opts.baseUrl, host: base.hostname, pages: [...pages.values()], links, robots, sitemap, externalChecks, imageChecks,
-    limitReached, cancelled, startedAt, finishedAt: new Date(),
+    limitReached, cancelled, rendering, startedAt, finishedAt: new Date(),
   };
 }
 

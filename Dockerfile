@@ -30,6 +30,11 @@ RUN printf '#!/bin/sh\nexec tsx src/worker/index.ts "$@"\n' > /usr/local/bin/wor
   && chmod +x /usr/local/bin/worker /usr/local/bin/migrate
 RUN groupadd --system app && useradd --system --gid app --home /app app
 COPY --from=build --chown=app:app /app /app
+# Headless Chromium for JavaScript rendering (used by the worker's crawls of single-page apps).
+# The web process never launches it; drop this layer for a smaller web-only image if you like.
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN node node_modules/playwright-core/cli.js install --with-deps --only-shell chromium \
+  && chmod -R a+rX /ms-playwright && rm -rf /var/lib/apt/lists/*
 USER app
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \

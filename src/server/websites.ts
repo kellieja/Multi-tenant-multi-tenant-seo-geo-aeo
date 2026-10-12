@@ -49,6 +49,8 @@ export const websiteSettingsSchema = z.object({
   // Cron expression for scheduled crawls, e.g. "0 3 * * 1". Empty = manual only.
   crawlSchedule: z.string().trim().max(100).optional().nullable().transform((v) => v || null),
   crawlMode: z.enum(["FULL", "INCREMENTAL"]).default("FULL"),
+  // JavaScript rendering: "auto" renders only when the homepage's content appears after JS runs (single-page apps).
+  renderMode: z.enum(["auto", "always", "off"]).default("auto"),
   checkExternalLinks: z.coerce.boolean().default(true),
   // "always": every site change needs a human approval. "safe-auto": only low-risk metadata fixes may auto-apply in AUTOMATIC workflows.
   approvalPolicy: z.enum(["always", "safe-auto"]).default("always"),

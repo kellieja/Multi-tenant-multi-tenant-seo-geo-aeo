@@ -154,7 +154,15 @@ export function runAudit(r: CrawlResult): RawFinding[] {
       if (dupes && dupes.length > 1) add("duplicate_content", p.url, { alsoOn: dupes.filter((u) => u !== p.url).slice(0, 10), wordCount: p.wordCount });
       if (p.wordCount < 200 && p.url !== home && p.scriptCount < 8) add("thin_content", p.url, { wordCount: p.wordCount });
     }
-    if (p.wordCount < 50 && p.scriptCount >= 8) add("js_rendering_suspected", p.url, { wordCount: p.wordCount, externalScripts: p.scriptCount });
+    if (p.render) {
+      // Rendered crawl: compare what crawlers that don't run JavaScript would see with the rendered page.
+      const raw = p.render.raw;
+      const missing: string[] = [];
+      if (p.wordCount >= 50 && raw.wordCount < p.wordCount * 0.5) missing.push(`${raw.wordCount} of ${p.wordCount} words`);
+      if (!raw.title && p.title) missing.push("title");
+      if (!raw.h1 && p.h1.length) missing.push("H1");
+      if (missing.length) add("content_requires_js", p.url, { rawWords: raw.wordCount, renderedWords: p.wordCount, rawLinks: raw.links, missingWithoutJs: missing, pageErrors: p.render.pageErrors });
+    } else if (p.wordCount < 50 && p.scriptCount >= 8) add("js_rendering_suspected", p.url, { wordCount: p.wordCount, externalScripts: p.scriptCount });
 
     // ── Links on this page
     const outs = linksFrom.get(p.url) ?? [];

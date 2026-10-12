@@ -79,6 +79,7 @@ Failed jobs also notify the organisation in-app. Slack and email delivery are us
 - **Worker:** run more replicas for more throughput. Each replica processes `CRAWL_CONCURRENCY` crawls (default 2) and `WORKER_CONCURRENCY` other jobs (default 5). The scheduler tick runs on only one replica at a time (Redis lock).
   - Crawls are network-bound and polite: each respects the site's crawl delay and robots.txt.
   - Raising concurrency increases outbound traffic and provider API spend, but doesn't make any one site crawl faster.
+- **JavaScript rendering:** a rendered crawl uses one headless Chromium per running crawl, about 300–500 MB of RAM, and is roughly 5–10× slower per page than a raw crawl. Size worker memory and `CRAWL_CONCURRENCY` accordingly. "Auto" mode only renders sites that need it.
 - **Provider quotas:** Google APIs back off on 429 and quota errors. DataForSEO and AI provider costs are recorded per sync in the sync logs, so watch them after onboarding large clients.
 
 ## Data retention

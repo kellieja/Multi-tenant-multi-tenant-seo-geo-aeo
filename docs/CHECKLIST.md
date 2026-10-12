@@ -90,7 +90,11 @@ Legend: ✅ working & tested · 🟡 implemented, needs external credentials to 
 - ✅ `/api/health` (database, Redis, worker heartbeat) for load balancers and uptime monitors
 - ✅ Orphaned-job recovery: QUEUED rows with no queue entry are re-queued; RUNNING rows whose queue entry vanished are failed
 - ✅ Production `next build` passes
-- 🟡 Dockerfile (non-root, healthcheck; `next start` / `worker` / `migrate`) and docker-compose: image built and smoke-tested (migrate, web, worker, health) in this environment, except the `apt-get install openssl` layer, which couldn't be fetched here because the Debian mirror is blocked by the build sandbox's network policy. Build once on a normal machine/CI to confirm.
+- ✅ Dockerfile (non-root, healthcheck; `next start` / `worker` / `migrate`) and docker-compose; the full image build (including the OpenSSL and Chromium layers) is verified in CI on every push
 - ✅ README: architecture, local setup, configuration, deployment (Vercel web + container worker, or all containers), security model
 - ✅ docs/OPERATIONS.md: backups, monitoring/alerts, scaling, retention, deploys and rollback, failure recovery runbooks
+
+## Phase 8 — Replit and non-WordPress sites
+- ✅ GitHub Actions CI: typecheck, lint, unit/integration tests (Postgres + Redis services), production build, Playwright browser tests against a live stack, Docker image build
+- ✅ JavaScript rendering for client-rendered sites (React/Vite, typical Replit projects): auto-detect from the homepage, rendered crawl with raw-vs-rendered comparison, "Main content only appears after JavaScript runs" finding, AEO and internal-link jobs use rendered pages; every browser request goes through the SSRF guard, WebSockets and service workers blocked; falls back to raw HTML when Chromium is unavailable
 

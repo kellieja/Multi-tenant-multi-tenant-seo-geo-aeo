@@ -5,7 +5,7 @@ import { assertWebsiteAccess } from "@/lib/auth/context";
 import type { JobContext } from "@/lib/jobs/context";
 import { UserError } from "@/lib/errors";
 import { writeAuditLog } from "@/lib/audit-log";
-import { fetchHtmlPolitely } from "@/lib/net/polite-fetch";
+import { openSitePageFetcher } from "./page-fetch";
 import { normalizeUrl } from "@/lib/url";
 import { findConnection } from "@/integrations/connections";
 import { WordPressClient } from "@/integrations/wordpress";
@@ -177,12 +177,13 @@ export async function processInternalLinks(jc: JobContext) {
   const perTarget = new Map<string, number>();
   let created = 0;
   let fetched = 0;
+  const pagesFetcher = await openSitePageFetcher(websiteId);
+  try {
   for (const srcUrl of sources) {
     if (await jc.isCancelled()) break;
     let paragraphs: SourceParagraph[];
     try {
-      const res = await fetchHtmlPolitely(srcUrl);
-      paragraphs = linkableParagraphs(res.body);
+      paragraphs = linkableParagraphs((await pagesFetcher.get(srcUrl)).html);
     } catch (err) {
       jc.log(`skip ${srcUrl}: ${(err as Error).message}`);
       continue;
@@ -212,6 +213,9 @@ export async function processInternalLinks(jc: JobContext) {
       created++;
     }
     if (delay) await new Promise((r) => setTimeout(r, delay));
+  }
+  } finally {
+    await pagesFetcher.close();
   }
   // Older SUGGESTED rows from previous crawls are superseded by this run.
   await prisma.internalLinkSuggestion.deleteMany({ where: { websiteId, status: "SUGGESTED", crawlId: { not: crawl.id } } });

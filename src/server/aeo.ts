@@ -14,6 +14,7 @@ import { DataForSeoClient } from "@/integrations/dataforseo";
 import { getAiClient, NoAiProviderError } from "@/integrations/ai";
 import { classifyIntent } from "./keywords";
 import { readSettings } from "./websites";
+import { openSitePageFetcher } from "./page-fetch";
 import { parseJsonLoose, FACT_GUARDRAIL } from "./ai-json";
 
 export interface AeoCheck { key: string; label: string; pass: boolean; weight: number; detail: string; applicable: boolean }
@@ -126,14 +127,15 @@ export async function processAeoAssess(jc: JobContext) {
       urls = [...new Set([...urls, ...pages.map((x) => x.url)])].slice(0, p.limit ?? 30);
     }
   }
-  const ua = process.env.CRAWLER_USER_AGENT ?? "SearchOpsBot/1.0";
   const home = normalizeUrl(site.baseUrl);
   let done = 0;
+  // Robots-aware, and renders JavaScript on sites whose latest crawl needed it.
+  const fetcher = await openSitePageFetcher(websiteId);
+  try {
   for (const url of urls) {
     try {
-      const res = await safeFetch(url, { headers: { "user-agent": ua, accept: "text/html" }, maxBytes: 5 * 1024 * 1024 });
-      if (res.status !== 200) continue;
-      const a = assessHtml(res.body, res.finalUrl, { domain: site.domain, brandTerms: site.brandTerms, isHomepage: normalizeUrl(url) === home });
+      const res = await fetcher.get(url);
+      const a = assessHtml(res.html, res.finalUrl, { domain: site.domain, brandTerms: site.brandTerms, isHomepage: normalizeUrl(url) === home });
       await prisma.aeoAssessment.create({ data: { organizationId: site.organizationId, websiteId, crawlId: crawl.id, url, score: a.score, checks: { checks: a.checks, questionHeadings: a.questionHeadings, answerPassage: a.answerPassage, wordCount: a.wordCount, types: a.types } as unknown as Prisma.InputJsonValue } });
     } catch (err) {
       jc.log(`skip ${url}: ${(err as Error).message}`);
@@ -141,6 +143,9 @@ export async function processAeoAssess(jc: JobContext) {
     done++;
     await jc.progress(Math.round((done / urls.length) * 95), `Assessed ${done}/${urls.length}`);
     await new Promise((r) => setTimeout(r, readSettings(site.settings).crawlDelayMs));
+  }
+  } finally {
+    await fetcher.close();
   }
   return { assessed: done };
 }

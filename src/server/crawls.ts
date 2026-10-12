@@ -57,6 +57,7 @@ function recordFromRow(row: CrawledPage): CrawledPageRecord {
     hreflang: row.hreflang as never, relNext: (x.relNext as string) ?? null, relPrev: (x.relPrev as string) ?? null,
     structuredData: row.structuredData as never, mixedContent: row.mixedContent, wordCount: row.wordCount, textSample: row.textSample ?? "",
     contentHash: row.contentHash, simhash: row.simhash, scriptCount: (x.scriptCount as number) ?? 0, outlinks: row.outlinks, inlinks: row.inlinks,
+    render: (x.render as CrawledPageRecord["render"]) ?? null,
   };
 }
 
@@ -88,6 +89,7 @@ export async function processCrawlJob(jc: JobContext) {
       excludePatterns: settings.excludePatterns,
       userAgent: process.env.CRAWLER_USER_AGENT ?? "SearchOpsBot/1.0",
       checkExternalLinks: settings.checkExternalLinks,
+      render: settings.renderMode,
       incrementalSeeds: seeds,
       isCancelled: jc.isCancelled,
       onProgress: async (p) => {
@@ -133,6 +135,7 @@ export async function processCrawlJob(jc: JobContext) {
       externalLinksChecked: result.externalChecks.size,
       imagesChecked: result.imageChecks.size,
       issueCounts: counts,
+      rendering: JSON.parse(JSON.stringify(result.rendering)) as Prisma.InputJsonValue,
       bySeverity: raw.reduce<Record<string, number>>((m, f) => { const s = ISSUES[f.issueType].severity; m[s] = (m[s] ?? 0) + 1; return m; }, {}),
       ...lifecycle,
       healthFormula: HEALTH_FORMULA,
@@ -224,7 +227,7 @@ async function persistPages(crawl: Crawl, result: CrawlResult, refetched: Set<st
     textSample: p.textSample, inlinks: p.inlinks, outlinks: p.outlinks, depth: p.depth, responseTimeMs: p.responseTimeMs, bytes: p.bytes, lang: p.lang,
     hreflang: p.hreflang as unknown as Prisma.InputJsonValue, structuredData: p.structuredData as unknown as Prisma.InputJsonValue,
     images: p.images.slice(0, 100) as unknown as Prisma.InputJsonValue, mixedContent: p.mixedContent, hasViewport: p.hasViewport, error: p.error,
-    extra: { titleCount: p.titleCount, metaDescriptionCount: p.metaDescriptionCount, canonicalCount: p.canonicalCount, relNext: p.relNext, relPrev: p.relPrev, scriptCount: p.scriptCount, finalStatus: p.finalStatus ?? null, robotsRule: p.robotsRule ?? null },
+    extra: { titleCount: p.titleCount, metaDescriptionCount: p.metaDescriptionCount, canonicalCount: p.canonicalCount, relNext: p.relNext, relPrev: p.relPrev, scriptCount: p.scriptCount, finalStatus: p.finalStatus ?? null, robotsRule: p.robotsRule ?? null, render: p.render ?? null } as Prisma.InputJsonValue,
     carriedForward: refetched ? !refetched.has(p.url) : false,
   }));
   for (let i = 0; i < pageRows.length; i += 500) await prisma.crawledPage.createMany({ data: pageRows.slice(i, i + 500), skipDuplicates: true });

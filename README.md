@@ -74,6 +74,25 @@ echo 'ALLOW_PRIVATE_NETWORK_FETCH="true"' >> .env
 pnpm fixture-site 4100           # then add http://127.0.0.1:4100 as a website
 ```
 
+### JavaScript-rendered sites (React/Vite, many Replit projects)
+
+Each website has a **JavaScript rendering** setting (Website → Settings & team):
+
+| Setting | Behaviour |
+|---|---|
+| Auto (default) | Each crawl renders the homepage in headless Chromium and compares it with the raw HTML. If content only appears after JavaScript runs, the whole crawl uses rendered pages |
+| Always | Every page is rendered |
+| Off | Raw HTML only |
+
+Rendered crawls also:
+
+- run AEO assessments and internal-link checks on the rendered pages,
+- flag every page whose content needs JavaScript ("Main content only appears after JavaScript runs"), because many AI crawlers and some search engines read only the raw HTML.
+
+Rendering runs in the **worker** and needs Chromium. The Docker image includes it. Elsewhere, run `pnpm exec playwright install --with-deps chromium`, or set `CHROMIUM_PATH`. If Chromium is missing, crawls fall back to raw HTML and the crawl page says so.
+
+Inside the browser, every request the page makes goes through the same SSRF guard as the crawler. WebSockets and service workers are blocked.
+
 ### Tests
 
 ```bash
@@ -105,6 +124,7 @@ Optional variables:
 - `SMTP_URL` and `EMAIL_FROM`: notifications, reports and outreach.
 - `CRAWLER_USER_AGENT`.
 - `CRAWL_CONCURRENCY` and `WORKER_CONCURRENCY`.
+- `CHROMIUM_PATH`: a Chromium binary for JavaScript rendering, if it wasn't installed with Playwright.
 - `TRUSTED_PROXY_HOPS`: how many proxies sit in front of the web app. Default `1`. Rate limiting uses it to find the real client IP.
 
 Per-organisation credentials are entered in **Integrations**, verified live and stored encrypted. They are never sent to the browser. That covers DataForSEO, Anthropic, OpenAI, Gemini, Perplexity, WordPress, Slack and SMTP.
@@ -119,7 +139,7 @@ Per-organisation credentials are entered in **Integrations**, verified live and 
 2. **Vercel.** Import the repository with the Next.js preset and build command `pnpm build`. Set the environment variables above for Production. If your database provider offers a pooled URL, use it for the web app.
 3. **Worker.** Deploy the Docker image (below) with the command `worker` and the same environment variables.
    - Any always-on container host works: Railway, Fly.io, Render, ECS or a VM.
-   - Give it at least 1 GB of RAM.
+   - Give it at least 1 GB of RAM, or 2 GB if it crawls JavaScript-rendered sites (Chromium).
    - Allow a 60 s stop grace period. On `SIGTERM` the worker drains in-flight jobs.
 4. **Migrations.** Run `pnpm db:deploy` once per release, before the new web and worker versions take traffic. Use a CI step, or a one-off container: `docker run --env-file .env searchops migrate`.
 5. **Monitoring.** Point an uptime monitor at `GET /api/health` (see [docs/OPERATIONS.md](docs/OPERATIONS.md)).

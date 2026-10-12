@@ -37,6 +37,9 @@ export function CrawlSettingsForm({ id, settings, disabled }: { id: string; sett
                 <Input id="crawlSchedule" name="crawlSchedule" defaultValue={settings.crawlSchedule ?? ""} className="font-mono" placeholder="0 3 * * 1" />
               </Field>
               <Field label="Scheduled crawl mode" htmlFor="crawlMode"><Select id="crawlMode" name="crawlMode" defaultValue={settings.crawlMode}><option value="FULL">Full</option><option value="INCREMENTAL">Incremental</option></Select></Field>
+              <Field label="JavaScript rendering" htmlFor="renderMode" hint="Auto renders pages in a headless browser only when content appears after JavaScript runs (React/Vite single-page apps, many Replit sites). Rendered crawls are slower.">
+                <Select id="renderMode" name="renderMode" defaultValue={settings.renderMode}><option value="auto">Auto-detect</option><option value="always">Always render</option><option value="off">Off (raw HTML only)</option></Select>
+              </Field>
             </div>
           </section>
           <section>

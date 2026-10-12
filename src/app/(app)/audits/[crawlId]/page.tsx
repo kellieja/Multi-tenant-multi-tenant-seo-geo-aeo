@@ -21,7 +21,7 @@ export const metadata = { title: "Crawl" };
 
 interface Summary {
   htmlPages?: number; totalUrls?: number; indexablePages?: number; errorPages?: number; redirects?: number; blockedByRobots?: number;
-  carriedForward?: number; limitReached?: boolean; robotsStatus?: number | null; sitemapUrls?: number; externalLinksChecked?: number;
+  carriedForward?: number; limitReached?: boolean; rendering?: { mode: string; active: boolean; reasons: string[]; error?: string }; robotsStatus?: number | null; sitemapUrls?: number; externalLinksChecked?: number;
   newFindings?: number; resolved?: number; regressed?: number; healthFormula?: string; error?: string; triggeredBy?: string;
   sitemaps?: { url: string; status: number | null; urlCount: number; error?: string; isIndex: boolean }[];
 }
@@ -63,6 +63,8 @@ export default async function CrawlDetail({ params, searchParams }: { params: Pr
       />
       {active && job && <Card className="mb-5 p-4"><JobProgress jobId={job.id} initial={job} /></Card>}
       {crawl.status === "FAILED" && <Notice tone="bad" title="Crawl failed" className="mb-5">{s.error ?? job?.error ?? "Unknown error"}</Notice>}
+      {s.rendering?.active && <Notice tone="info" title="JavaScript rendering was used" className="mb-5">This site builds its content in the browser, so pages were rendered in a headless browser before auditing ({s.rendering.reasons.join("; ")}). Crawlers that don&apos;t run JavaScript see much less. See the &ldquo;Main content only appears after JavaScript runs&rdquo; findings.</Notice>}
+      {s.rendering?.error && <Notice tone="warn" title="JavaScript rendering unavailable" className="mb-5">{s.rendering.error} Results reflect the raw HTML only, which can under-report content on single-page apps.</Notice>}
       {s.limitReached && <Notice tone="warn" title="Page limit reached" className="mb-5">The crawl stopped at the configured maximum pages. Raise the limit in the website settings for full coverage; findings like orphan pages may be incomplete.</Notice>}
 
       {crawl.status === "SUCCEEDED" && (
