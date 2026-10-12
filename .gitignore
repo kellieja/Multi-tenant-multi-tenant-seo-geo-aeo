@@ -11,3 +11,6 @@ next-env.d.ts
 storage/
 e2e/.results
 playwright-report
+
+# Local Redis snapshots
+dump.rdb
